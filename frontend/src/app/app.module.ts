@@ -17,6 +17,8 @@ import { InRoomComponent }    from './inroom';
 import { SignInComponent }    from './signin.component';
 import { OwlComponent }       from './owl.component';
 
+import { WebsocketService } from './services/websocket.service';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -37,7 +39,7 @@ import { OwlComponent }       from './owl.component';
     CalendarModule,
     ListboxModule
   ],
-  providers: [],
+  providers: [WebsocketService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

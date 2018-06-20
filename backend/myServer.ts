@@ -1,7 +1,7 @@
-import * as express from 'express';
+import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import { ChatMsg, JoinRoom, BaseMsg, MSG_TYPE } from './protocol';
+import { ChatMsg, JoinRoom, BaseMsg, MSG_TYPE } from './../common/protocol';
 
 
 class Peer{
@@ -29,9 +29,12 @@ class Peer{
 }
 
 class Room{
+    static idcounter: number = 0;
+    id: number = 0;
     peers: Peer[];
     roomname: string;
     constructor( name:string){
+        this.id = Room.idcounter++;
         this.peers = [];
         this.roomname = name;
     }
@@ -54,11 +57,12 @@ class Room{
 }
 
 class MyServer{
-    rooms: Map<string, Room>;
+    rooms: Map<number, Room>;
 
     constructor(){
-        // TODO: int -> Room
-        this.rooms.set( "Cafe Luna" , new Room("Cafe Luna") );
+        let CafeLuna = new Room("Cafe Luna");
+        this.rooms = new Map();
+        this.rooms.set( CafeLuna.id ,  CafeLuna);
     }
     rageQuit( peer: Peer){
         this.rooms.forEach( (room) => room.leave(peer) );
@@ -68,21 +72,22 @@ class MyServer{
         switch( baseMsg.type){
             case MSG_TYPE.CHAT_MSG:{
                 let chatMsg = baseMsg as ChatMsg;
-                let room = this.rooms.get(chatMsg.roomname);
+                let room = this.rooms.get(chatMsg.roomid);
                 if( room != undefined )
-                    // check if is in the room
+                    // check if peer is in the room
                     // or forward message to room, dont broadcast here
                     room.broadcast( peer, `${peer.id}: ${message}`, true);
                 else
-                    peer.send(`Server: no such room like ${chatMsg.roomname}`);
+                    peer.send(`Server: no such room`);
             }break;
             case MSG_TYPE.JOIN_ROOM:{
                 let joinRoomMsg = baseMsg as JoinRoom;
-                let room = this.rooms.get(joinRoomMsg.roomname);
+                let room = this.rooms.get( joinRoomMsg.roomid);
                 if( room != undefined )
                     room.join(peer);
                 else
-                    this.rooms.set( joinRoomMsg.roomname , new Room(joinRoomMsg.roomname) );
+                    // this.rooms.set( joinRoomMsg.roomid , new Room(joinRoomMsg.roomname) );
+                    peer.send(`No such room!`);
             }break;
             // case MSG_TYPE.GET_ROOMS_LIST:{}break;
         }

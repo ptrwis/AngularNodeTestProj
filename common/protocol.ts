@@ -11,19 +11,19 @@ export abstract class BaseMsg {
 }
 
 export class JoinRoom extends BaseMsg {
-    roomname: string;
-    constructor( roomname: string){
+    roomid: number;
+    constructor( roomid: number){
         super( MSG_TYPE.JOIN_ROOM);
-        this.roomname = roomname;
+        this.roomid = roomid;
     }
 }
 
 export class ChatMsg extends BaseMsg {
-    msg: string
-    roomname: string;
-    constructor( msg: string, roomname: string){
+    msg: string;
+    roomid: number;
+    constructor( msg: string, roomid: number){
         super( MSG_TYPE.CHAT_MSG);
         this.msg = msg;
-        this.roomname = roomname;
+        this.roomid = roomid;
     }
 }

@@ -52,7 +52,7 @@ export class GamePlayComponent implements AfterViewInit {
   }
 
   private drawOnCanvas() {
-    let unixms = new Date().getTime();
+    const unixms = new Date().getTime();
     // incase the context is not set
     if (!this.ctx) { return; }
     // clear canvas
@@ -62,7 +62,7 @@ export class GamePlayComponent implements AfterViewInit {
     // sets the start point
     this.ctx.moveTo(this.width / 2, this.height / 2); // from
     // draws a line from the start pos until the current position
-    let angle = this.rotDir * unixms * 0.005;
+    const angle = this.rotDir * unixms * 0.005;
     this.ctx.lineTo(this.width / 2 + 80 * Math.sin(angle),
       this.height / 2 + 80 * Math.cos(angle));
     // strokes the current path with the styles we set earlier

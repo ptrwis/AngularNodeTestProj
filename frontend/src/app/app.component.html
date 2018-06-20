@@ -1,4 +1,7 @@
 <h2>{{title}}</h2>
+<h3>websocket state: {{getState()}}</h3>
+<button (click)="wsconnect()" >connect</button>
+<button (click)="wsdisconnect()" >disconnect</button>
 <nav>
   <ul>
       <li><a routerLink="/signin">signin</a></li>
