@@ -1,11 +1,17 @@
 import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import { ChatMsg, JoinRoom, BaseMsg, MSG_TYPE } from './../common/protocol';
+import { MSG_TYPE, BaseMsg, ChatMsg, JoinRoomMsg, CreateRoomMsg, 
+        ServerMsg, ChatEvent, LeaveTheRoomMsg, PeerLeftTheRoomMsg, 
+        ServerToPeer, PeerJoinedTheRoomMsg, PeerToServer, RpcRespMsg, RpcReqMsg } 
+        from './../common/protocol';
 
-
+/**
+ * 
+ */
 class Peer{
     id: number;
+    // name: string;
     rooms: Room[];
     ws: WebSocket;
 
@@ -15,8 +21,8 @@ class Peer{
         this.rooms = [];
     }
     // send msg to this peer
-    send(msg:string){
-        this.ws.send( msg );
+    send( msg: ServerToPeer){
+        this.ws.send( JSON.stringify(msg) );
     }
     join( room: Room){
         this.rooms.push(room);
@@ -28,6 +34,10 @@ class Peer{
     }
 }
 
+
+/**
+ * 
+ */
 class Room{
     static idcounter: number = 0;
     id: number = 0;
@@ -38,7 +48,7 @@ class Room{
         this.peers = [];
         this.roomname = name;
     }
-    broadcast( sender: Peer, msg: string, excludeSender: boolean) {
+    broadcast( sender: Peer, msg: BaseMsg, excludeSender: boolean) {
         if( excludeSender===false){
             this.peers.forEach( peer => peer.send( msg));
         }else{
@@ -47,54 +57,115 @@ class Room{
     }
     join( peer: Peer){
         this.peers.push( peer);
-        this.broadcast( peer, `peer ${peer.id} joined the room ${this.roomname} `, true);
-        peer.send(`You have joined room ${this.roomname}`);
+        this.broadcast( 
+            peer, 
+            new PeerJoinedTheRoomMsg(peer.id, `Guest ${peer.id}`, this.id), 
+            true
+        );
+        peer.send( new ServerMsg(`You have joined room ${this.roomname}`));
     }
     leave( peer:Peer){
-        this.broadcast( peer, `peer ${peer.id} left the room ${this.roomname} `, true);
+        this.broadcast( 
+            peer, 
+            new PeerLeftTheRoomMsg(peer.id, this.id),
+            true
+        );
         this.peers = this.peers.filter( (p) => p.id !== peer.id );
     }
 }
 
+
+/**
+ * 
+ */
 class MyServer{
     rooms: Map<number, Room>;
 
     constructor(){
-        let CafeLuna = new Room("Cafe Luna");
         this.rooms = new Map();
-        this.rooms.set( CafeLuna.id ,  CafeLuna);
     }
     rageQuit( peer: Peer){
         this.rooms.forEach( (room) => room.leave(peer) );
     }
-    route( peer: Peer, message: string){
-        let baseMsg = JSON.parse(message) as BaseMsg;
+    route( sender: Peer, message: string){
+        // we have to parse it here, to forward message to apporpriate room
+        let baseMsg = JSON.parse(message) as PeerToServer;
+        // TODO: safe casting
+        // TODO: check if user is singed in
         switch( baseMsg.type){
             case MSG_TYPE.CHAT_MSG:{
                 let chatMsg = baseMsg as ChatMsg;
-                let room = this.rooms.get(chatMsg.roomid);
-                if( room != undefined )
-                    // check if peer is in the room
-                    // or forward message to room, dont broadcast here
-                    room.broadcast( peer, `${peer.id}: ${message}`, true);
-                else
-                    peer.send(`Server: no such room`);
+                this.runCallbackWithGuard( sender, chatMsg.roomid, 
+                    (room: Room) => room.broadcast( 
+                        sender, 
+                        new ChatEvent( sender.id, `${sender.id}: ${message}`, room.id), 
+                        true
+                    )
+                );
             }break;
             case MSG_TYPE.JOIN_ROOM:{
-                let joinRoomMsg = baseMsg as JoinRoom;
-                let room = this.rooms.get( joinRoomMsg.roomid);
-                if( room != undefined )
-                    room.join(peer);
-                else
-                    // this.rooms.set( joinRoomMsg.roomid , new Room(joinRoomMsg.roomname) );
-                    peer.send(`No such room!`);
+                let msg = baseMsg as JoinRoomMsg;
+                this.runCallbackWithGuard( sender, msg.roomid, 
+                    (room: Room) => room.join( sender)
+                );
             }break;
+            case MSG_TYPE.LEAVE_THE_ROOM:{
+                let msg = baseMsg as LeaveTheRoomMsg;
+                this.runCallbackWithGuard( sender, msg.roomid, 
+                    (room: Room) => room.broadcast( sender, new PeerLeftTheRoomMsg( sender.id, room.id), true)
+                );
+            }break;
+            case MSG_TYPE.CREATE_ROOM:{
+                let msg = baseMsg as CreateRoomMsg;
+                let room = new Room(msg.roomname);
+                if( this.rooms.get(room.id) === undefined )
+                    this.rooms.set( room.id ,  room);
+                else
+                    sender.send( new ServerMsg(`Server: Such room already exists!`));
+            }break;
+            case MSG_TYPE.SIGNIN:{
+                // Kick guests with 10*X time of inactivity.
+                // So long, this user is "Guest", now we can assign him his username
+                /**
+                 * username = this.userDatabase.get(password);
+                 * if( username !== underfined && username == msg.username )
+                 *  ok!
+                 */
+            }break;
+            case MSG_TYPE.SIGNUP:{
+                // this.userDatabase.put( msg.password, msg.username )
+            }break;
+            case MSG_TYPE.RPC_REQ:
+                let rpcReqMsg = baseMsg as RpcReqMsg;
+                setTimeout(
+                    () => sender.send( new RpcRespMsg( rpcReqMsg)), 
+                    500 + 1000 * Math.random()
+                );
+            break;
+            // case MSG_TYPE.PEER_LEFT_THE_ROOM:{ }break;
             // case MSG_TYPE.GET_ROOMS_LIST:{}break;
         }
     }
-    
+    /**
+     * The "guard" is about to check room's existence
+     * @param sender 
+     * @param roomid 
+     * @param callback 
+     */
+    runCallbackWithGuard( sender: Peer, roomid: number, callback: ( room: Room) => void) {
+        let room = this.rooms.get( roomid);
+        if( room === undefined ) {
+            sender.send( new ServerMsg(`Server: Such room already exists!`));
+        } else {
+            callback( room);
+        }
+    }
 }
 
+
+/**
+ * SETUP AND START
+ */
 const app = express();
 //initialize a simple http server
 const server = http.createServer(app);

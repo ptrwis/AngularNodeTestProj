@@ -1,6 +1,7 @@
-import { MyEnum } from './domain/myenum';
+import { Vec2d } from './../../../../../common/vec2d';
+import { MyEnum } from './../../domain/myenum';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef } from '@angular/core';
-import { Developer } from './domain/developer';
+import { Developer } from './../../domain/developer';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 
@@ -63,8 +64,11 @@ export class GamePlayComponent implements AfterViewInit {
     this.ctx.moveTo(this.width / 2, this.height / 2); // from
     // draws a line from the start pos until the current position
     const angle = this.rotDir * unixms * 0.005;
-    this.ctx.lineTo(this.width / 2 + 80 * Math.sin(angle),
-      this.height / 2 + 80 * Math.cos(angle));
+    const to = new Vec2d( 80, 0 ).rot( angle );
+    this.ctx.lineTo(
+      this.width / 2 + to.x,
+      this.height / 2 + to.y
+    );
     // strokes the current path with the styles we set earlier
     this.ctx.stroke();
     requestAnimationFrame(this.drawOnCanvas.bind(this));

@@ -1,6 +1,6 @@
-import { MyEnum } from './domain/myenum';
+import { MyEnum } from './../../domain/myenum';
 import { Component, OnInit } from '@angular/core';
-import { Developer } from './domain/developer';
+import { Developer } from './../../domain/developer';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 

@@ -1,0 +1,10 @@
+<h2>Sign In</h2>
+<div *ngIf="authService.isAuth() == false">
+    <input type="text" pInputText [(ngModel)]="username" placeholder="asd">
+    <input type="text" pInputText [(ngModel)]="password" placeholder="asd">
+    <p-button label="Sign In" (onClick)="handleSignIn($event)"></p-button>
+</div>
+
+<div *ngIf="authService.isAuth() == true" >
+  <p-button label="Sign Out" (onClick)="handleSignOut($event)"></p-button>
+</div>

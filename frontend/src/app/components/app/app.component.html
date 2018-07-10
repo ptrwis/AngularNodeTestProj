@@ -1,0 +1,19 @@
+<div style="background-color: #cccccc; padding: 10px; margin: 30px" >
+  <h2>{{title}}</h2>
+  <h3>websocket state: {{getState()}}</h3>
+  <button (click)="wsconnect()" >connect</button>
+  <button (click)="wsdisconnect()" >disconnect</button>
+  <button (click)="rpcRequest()" >rpc request</button>
+  {{rpcResp}}
+  <nav style="display: flex; justify-content: space-around; " >
+    <a routerLink="">Main</a>
+    <a routerLink="/signin">signin</a>
+    <a routerLink="/roomlist">roomlist</a>
+    <a routerLink="/createroom">createroom</a>
+    <a routerLink="/gameplay">gameplay</a>
+    <a routerLink="/inroom">inroom</a>
+  </nav>
+  <div style="border: 2px solid black; background-color: #eeeeee" >
+    <router-outlet></router-outlet>
+  </div>
+</div>
