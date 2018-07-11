@@ -1,6 +1,6 @@
 import { Vec2d } from "./vec2d";
 
-class Game{
+export class Game{
 
     players: Set<Player>;
 
