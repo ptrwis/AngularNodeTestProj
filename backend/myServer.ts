@@ -3,8 +3,9 @@ import * as http from 'http';
 import * as WebSocket from 'ws';
 import { MSG_TYPE, BaseMsg, ChatMsg, JoinRoomMsg, CreateRoomMsg, 
         ServerMsg, ChatEvent, LeaveTheRoomMsg, PeerLeftTheRoomMsg, 
-        ServerToPeer, PeerJoinedTheRoomMsg, PeerToServer, RpcRespMsg, RpcReqMsg } 
-        from './../common/protocol';
+        ServerToPeer, PeerJoinedTheRoomMsg, PeerToServer } 
+        from './../common/protocol/protocol';
+import { encode, decode } from 'msgpack-lite';
 
 /**
  * 
@@ -22,7 +23,8 @@ class Peer{
     }
     // send msg to this peer
     send( msg: ServerToPeer){
-        this.ws.send( JSON.stringify(msg) );
+        // this.ws.send( JSON.stringify(msg) );
+        this.ws.send( encode( msg ) );
     }
     join( room: Room){
         this.rooms.push(room);

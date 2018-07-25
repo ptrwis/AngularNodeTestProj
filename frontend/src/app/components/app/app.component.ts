@@ -1,6 +1,6 @@
-import { RpcReqMsg, RpcRespMsg } from './../../../../../common/protocol';
+import { RpcReqMsg, RpcRespMsg } from './../../../../../common/protocol/protocol';
 import { Component, OnInit } from '@angular/core';
-import { WebsocketService } from './../../services/websocket.service';
+import { WebsocketClientService } from './../../services/websocket.service';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +10,10 @@ import { WebsocketService } from './../../services/websocket.service';
 export class AppComponent implements OnInit {
 
   title = 'maj app';
-  wss: WebsocketService;
+  wss: WebsocketClientService;
   rpcResp: string;
 
-  constructor( websocketService: WebsocketService) {
+  constructor( websocketService: WebsocketClientService) {
     this.wss = websocketService;
   }
 
@@ -36,6 +36,7 @@ export class AppComponent implements OnInit {
     this.wss.call(
       new RpcReqMsg(),
       (msg: RpcRespMsg) => {
+        // we must cast here reponse to destination class
         console.log( msg.msgid);
         this.rpcResp = JSON.stringify(msg);
       }

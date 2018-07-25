@@ -17,7 +17,7 @@ import { InRoomComponent } from './components/inroom/inroom';
 import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
 
-import { WebsocketService } from './services/websocket.service';
+import { WebsocketClientService } from './services/websocket.service';
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
 
@@ -42,7 +42,7 @@ import { AuthService } from './services/auth.service';
     ListboxModule
   ],
   providers: [
-    WebsocketService,
+    WebsocketClientService,
     AuthGuard,
     AuthService
   ],
