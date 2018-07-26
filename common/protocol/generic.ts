@@ -47,7 +47,7 @@ export class ActionMsg extends BaseMsg implements PeerToServer {
  */
 export class BroadcastMsg implements ServerToPeer {
     constructor(
-        sender_id: number,
+        sender_id: number, // not always
         type: MSG_TYPE,
         content: string
     ){
