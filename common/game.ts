@@ -3,13 +3,12 @@ import { Vec2d } from "./vec2d";
 export class ServerGame {
     maxLag = 50; // [ms]
     players: Set<ForeignPlayer>;
-    closestEvent: GameEvent;
     submitRemoteEvent( ev: GameEvent ){
         let now = new Date().getMilliseconds();
         if( Math.abs( ev.time - now ) > this.maxLag )
             return;
         this.recountClosestEvent();
-        broadcast( ev );
+        this.broadcast( ev );
     }
     async recountClosestEvent() { }
     async broadcast( ev: GameEvent ) { }
