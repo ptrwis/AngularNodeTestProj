@@ -1,5 +1,5 @@
 import { BaseMsg, PeerToServer } from "./generic";
-import { MSG_TYPE } from "./types";
+import { MSG_TYPE } from "./msg_types";
 
 // command, reponse, broadcast
 

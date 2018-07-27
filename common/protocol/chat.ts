@@ -1,9 +1,7 @@
-import { MSG_TYPE } from "./types";
-import { BaseMsg, PeerToServer, ServerToPeer } from "./generic";
+import { MSG_TYPE } from "./msg_types";
+import { BaseMsg } from "./generic";
 
-// action, broadcast
-
-export class ChatMsg extends BaseMsg implements PeerToServer {
+export class ChatMsg extends BaseMsg {
     msg: string;
     roomid: number;
     constructor( msg: string, roomid: number){
@@ -13,7 +11,7 @@ export class ChatMsg extends BaseMsg implements PeerToServer {
     }
 }
 
-export class ChatEvent extends BaseMsg implements ServerToPeer {
+export class ChatEvent extends BaseMsg {
     peerid: number;
     msg: string;
     roomid: number;

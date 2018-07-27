@@ -1,7 +1,7 @@
-import { MSG_TYPE } from "./types";
+import { MSG_TYPE } from "./msg_types";
 import { BaseMsg } from "./generic";
 
-export class LeaveTheRoomMsg extends BaseMsg implements PeerToServer {
+export class LeaveTheRoomMsg extends BaseMsg {
     roomid: number;
     constructor( roomid: number){
         super( MSG_TYPE.LEAVE_THE_ROOM);
@@ -9,7 +9,7 @@ export class LeaveTheRoomMsg extends BaseMsg implements PeerToServer {
     }
 }
 
-export class PeerLeftTheRoomMsg extends BaseMsg implements ServerToPeer {
+export class PeerLeftTheRoomMsg extends BaseMsg {
     peerid: number;
     roomid: number;
     constructor( peerid:number, roomid: number){

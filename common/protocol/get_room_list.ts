@@ -1,15 +1,15 @@
-import { MSG_TYPE } from "./types";
-import { BaseMsg, PeerToServer, ServerToPeer } from "./generic";
+import { MSG_TYPE } from "./msg_types";
+import { BaseMsg } from "./generic";
 
 
-export class GetRoomList extends BaseMsg implements PeerToServer {
+export class GetRoomList extends BaseMsg {
     constructor( roomid: number){
         super( MSG_TYPE.GET_ROOM_LIST);
     }
 }
 
 
-export class RoomList extends BaseMsg implements ServerToPeer {
+export class RoomList extends BaseMsg {
     rooms: string[];
     constructor( ) {
         super(MSG_TYPE.RESPONSE);
