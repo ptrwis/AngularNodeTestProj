@@ -1,11 +1,14 @@
 import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import { MSG_TYPE, BaseMsg, ChatMsg, JoinRoomMsg, CreateRoomMsg, 
-        ServerMsg, ChatEvent, LeaveTheRoomMsg, PeerLeftTheRoomMsg, 
-        ServerToPeer, PeerJoinedTheRoomMsg, PeerToServer } 
-        from './../common/protocol/protocol';
 import { encode, decode } from 'msgpack-lite';
+import { MSG_TYPE } from '../common/protocol/msg_types';
+import { BaseMsg } from '../common/protocol/generic';
+import { ServerMsg } from '../common/protocol/server_msg';
+import { PeerJoinedTheRoomMsg, JoinRoomMsg } from '../common/protocol/join_room';
+import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../common/protocol/left_room';
+import { ChatEvent, ChatMsg } from '../common/protocol/chat';
+import { CreateRoomMsg } from '../common/protocol/create_room';
 
 /**
  * 
@@ -22,9 +25,13 @@ class Peer{
         this.rooms = [];
     }
     // send msg to this peer
-    send( msg: ServerToPeer){
+    send( msg: BaseMsg){
         // this.ws.send( JSON.stringify(msg) );
         this.ws.send( encode( msg ) );
+    }
+    // don't encode, useful for broadcasts
+    justSend( msg: Buffer){
+        this.ws.send( msg );
     }
     join( room: Room){
         this.rooms.push(room);
@@ -51,10 +58,11 @@ class Room{
         this.roomname = name;
     }
     broadcast( sender: Peer, msg: BaseMsg, excludeSender: boolean) {
+        const m = encode( msg );
         if( excludeSender===false){
-            this.peers.forEach( peer => peer.send( msg));
+            this.peers.forEach( peer => peer.justSend(m));
         }else{
-            this.peers.forEach( peer => peer.id === sender.id ? peer.send( msg) : null );
+            this.peers.forEach( peer => peer.id === sender.id ? peer.justSend(m) : null );
         }
     }
     join( peer: Peer){
@@ -91,7 +99,7 @@ class MyServer{
     }
     route( sender: Peer, message: string){
         // we have to parse it here, to forward message to apporpriate room
-        let baseMsg = JSON.parse(message) as PeerToServer;
+        let baseMsg = JSON.parse(message) as BaseMsg;
         // TODO: safe casting
         // TODO: check if user is singed in
         switch( baseMsg.type){
