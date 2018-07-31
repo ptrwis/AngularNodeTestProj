@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { EventEmitter } from 'events';
-import { PeerToServer, ServerToPeer, MSG_TYPE, RpcRequest, RpcResponse, BaseMsg } from '../../../../common/protocol/sign_up';
-import { encode, decode } from 'msgpack-lite';
-import { BaseMsg, BaseMsg } from '../../../../common/protocol/generic';
+import * as msgpack from 'msgpack-lite';
+import { MSG_TYPE } from '../../../../common/protocol/msg_types';
+import { BaseMsg } from '../../../../common/protocol/generic';
 
 @Injectable()
 export class WebsocketClientService {
@@ -15,10 +15,9 @@ export class WebsocketClientService {
           this.ws = new WebSocket('ws://localhost:8999');
           this.ws.onmessage = (ev: MessageEvent) => {
             // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
-            const baseMsg = decode( ev.data ) as BaseMsg; // MsgPack
+            const baseMsg = msgpack.decode( ev.data ) as BaseMsg; // MsgPack
             switch (baseMsg.type) {
               case MSG_TYPE.RESPONSE:
-                // we trust our server :) (it didn't sent us a garbage)
                 this.rpcBus.emit( baseMsg.id.toString(), baseMsg);
               break;
             }
@@ -37,7 +36,7 @@ export class WebsocketClientService {
 
     async send( msg: BaseMsg) {
       // this.ws.send( JSON.stringify(msg)); // JSON string
-      this.ws.send( encode( msg ) ); // MsgPack
+      this.ws.send( msgpack.encode( msg ) ); // MsgPack
     }
 
     getState() {

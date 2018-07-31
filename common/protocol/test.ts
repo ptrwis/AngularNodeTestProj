@@ -1,34 +1,27 @@
-abstract class JRequest<T extends  JResponse>{
-    id: number;
+/*
+export abstract class XRequest<T extends XResponse>{
+    constructor(public id: number) { }
+}
+export abstract class XResponse{
+    constructor(public id: number) { }
 }
 
-abstract class JResponse{
-    id: number;
-}
-
-
-class JRoomList extends JResponse {
-    roomList: string;
-}
-
-class JGetRoomList extends JRequest<JRoomList>{
-}
-
-class Program { 
-    
-    rpcBus: EventEmitter = new EventEmitter();
-    
-    call
-    <Req extends JRequest<Resp>, Resp extends JResponse>
-    ( request: Req, listener: (r: Resp)=>void ): void {
-        // ( ... )
+export class XRoomList extends XResponse {
+    constructor( id: number, public roomList: string) { 
+        super(id);
     }
-    
-    main( args: string[] ) {
-        new Program().call( 
-                new JGetRoomList(), 
-                (rl) => console.log(rl.roomList)
-        );
-    }
-    
 }
+export class XGetRoomList extends XRequest<XRoomList>{
+}
+
+export function call
+    <Req extends XRequest<Resp>, Resp extends XResponse>
+    (request: Req, listener: (r: Resp) => void): void {
+    listener( new XRoomList(2, "xxx") );
+}
+
+call(
+    new XGetRoomList(2),
+    (rl) => console.log(rl.roomList)
+);
+*/
