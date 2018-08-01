@@ -1,4 +1,4 @@
-import { Game } from './../../../../../common/game';
+import { LocalGame } from './../../../../../common/game/game';
 /**
  * Draw game using HTML Canvas
  */
@@ -7,7 +7,7 @@ class CanvasRender {
   constructor(
     private canvas: HTMLCanvasElement,
     private ctx: CanvasRenderingContext2D,
-    private game: Game) {
+    private game: LocalGame) {
   }
 
   /**

@@ -19,6 +19,7 @@ export enum MSG_TYPE
     LEAVE_THE_ROOM, // resp=void, peer or server
     JOIN_ROOM, // resp=status
     GET_ROOM_LIST, // resp=roomlist, rpc, response has list of rooms
+    ADD,
 
     // response
     // one type for all responses, client will know the type because 

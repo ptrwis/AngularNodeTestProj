@@ -1,4 +1,5 @@
-import { RpcReqMsg, RpcRespMsg } from './../../../../../common/protocol/protocol';
+import { BaseMsg } from './../../../../../common/protocol/generic';
+import { AddTwoNumbers, AddResult } from './../../../../../common/protocol/addition';
 import { Component, OnInit } from '@angular/core';
 import { WebsocketClientService } from './../../services/websocket.service';
 
@@ -33,12 +34,14 @@ export class AppComponent implements OnInit {
   }
 
   rpcRequest() {
+    const a = Math.floor(Math.random() * 10);
+    const b = Math.floor(Math.random() * 10);
     this.wss.call(
-      new RpcReqMsg(),
-      (msg: RpcRespMsg) => {
-        // we must cast here reponse to destination class
-        console.log( msg.msgid);
-        this.rpcResp = JSON.stringify(msg);
+      new AddTwoNumbers(a, b),
+      (msg: BaseMsg) => {
+        const result = msg as AddResult;
+        console.log( result.result);
+        this.rpcResp = result.result.toString();
       }
     );
   }

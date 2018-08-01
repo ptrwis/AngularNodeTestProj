@@ -21,9 +21,9 @@ export class LocalGame {
     // bullets
     closestEvent: GameEvent;
     submitRemoteEvent( ev: GameEvent ){
-        if( ev.player == this.player )
+        /* if( ev.player == this.player )
             this.player.submitRemoteEvent( ev );
-        this.recountClosestEvent();
+        this.recountClosestEvent(); */
     }
     submitLocalEvent( ev: GameEvent ){
         this.player.submitLocalEvent( ev);

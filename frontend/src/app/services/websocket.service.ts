@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../../../../common/protocol/msg_types';
 import { BaseMsg } from '../../../../common/protocol/generic';
+// import * as WebSocket from 'ws';
 
 @Injectable()
 export class WebsocketClientService {
@@ -13,8 +14,10 @@ export class WebsocketClientService {
     connect() {
         if ( this.ws === undefined ) {
           this.ws = new WebSocket('ws://localhost:8999');
+          this.ws.binaryType = 'arraybuffer';
           this.ws.onmessage = (ev: MessageEvent) => {
             // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
+            console.log( ev );
             const baseMsg = msgpack.decode( ev.data ) as BaseMsg; // MsgPack
             switch (baseMsg.type) {
               case MSG_TYPE.RESPONSE:

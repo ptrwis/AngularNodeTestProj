@@ -1,7 +1,8 @@
+import { AddTwoNumbers, AddResult } from './../common/protocol/addition';
 import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
-import { encode, decode } from 'msgpack-lite';
+import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../common/protocol/msg_types';
 import { BaseMsg } from '../common/protocol/generic';
 import { ServerMsg } from '../common/protocol/server_msg';
@@ -27,7 +28,7 @@ class Peer{
     // send msg to this peer
     send( msg: BaseMsg){
         // this.ws.send( JSON.stringify(msg) );
-        this.ws.send( encode( msg ) );
+        this.ws.send( msgpack.encode( msg ) );
     }
     // don't encode, useful for broadcasts
     justSend( msg: Buffer){
@@ -58,7 +59,7 @@ class Room{
         this.roomname = name;
     }
     broadcast( sender: Peer, msg: BaseMsg, excludeSender: boolean) {
-        const m = encode( msg );
+        const m = msgpack.encode( msg );
         if( excludeSender===false){
             this.peers.forEach( peer => peer.justSend(m));
         }else{
@@ -97,9 +98,10 @@ class MyServer{
     rageQuit( peer: Peer){
         this.rooms.forEach( (room) => room.leave(peer) );
     }
-    route( sender: Peer, message: string){
+    route( sender: Peer, message: Buffer){
         // we have to parse it here, to forward message to apporpriate room
-        let baseMsg = JSON.parse(message) as BaseMsg;
+        // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
+        let baseMsg = msgpack.decode( message ) as BaseMsg;
         // TODO: safe casting
         // TODO: check if user is singed in
         switch( baseMsg.type){
@@ -145,6 +147,12 @@ class MyServer{
             case MSG_TYPE.SIGNUP:{
                 // this.userDatabase.put( msg.password, msg.username )
             }break;
+            case MSG_TYPE.ADD:{
+                let msg = baseMsg as AddTwoNumbers;
+                console.log( `${msg.a} + ${msg.b}` );
+                sender.send( new AddResult( msg ));
+            }break;
+            /*
             case MSG_TYPE.RPC_REQ:
                 let rpcReqMsg = baseMsg as RpcReqMsg;
                 setTimeout(
@@ -152,7 +160,7 @@ class MyServer{
                     500 + 1000 * Math.random()
                 );
             break;
-            // case MSG_TYPE.PEER_LEFT_THE_ROOM:{ }break;
+            */
             // case MSG_TYPE.GET_ROOMS_LIST:{}break;
         }
     }
@@ -186,7 +194,7 @@ let myServer = new MyServer();
 wss.on('connection', (ws: WebSocket) => {
     // To chyba dziala jak domkniecie, w kazdym razie- dziala.
     let peer = new Peer( Math.floor(Math.random() * 100_000) + 1 , ws);
-    ws.on('message', (message: string) => myServer.route( peer, message) );
+    ws.on('message', (message: Buffer) => myServer.route( peer, message) );
     ws.on('close', () => myServer.rageQuit( peer) );
 });
 

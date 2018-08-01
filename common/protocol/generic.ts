@@ -11,5 +11,7 @@ import { MSG_TYPE } from "./msg_types";
 export class BaseMsg{
     constructor( public type: MSG_TYPE, 
                  public id?: number ){
+        if( id === undefined )
+            this.id = Math.floor(Math.random() * 10000);
     }
 }

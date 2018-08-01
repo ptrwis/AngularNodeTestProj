@@ -10,8 +10,8 @@ export class GetRoomList extends BaseMsg {
 
 
 export class RoomList extends BaseMsg {
-    rooms: string[];
-    constructor( ) {
-        super(MSG_TYPE.RESPONSE);
+    constructor( public rooms: string[],
+                 req: GetRoomList ) {
+        super( MSG_TYPE.RESPONSE, req.id );
     }
 }
