@@ -17,8 +17,7 @@ export class WebsocketClientService {
           this.ws.binaryType = 'arraybuffer';
           this.ws.onmessage = (ev: MessageEvent) => {
             // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
-            console.log( ev );
-            const baseMsg = msgpack.decode( ev.data ) as BaseMsg; // MsgPack
+            const baseMsg = msgpack.decode( new Uint8Array(ev.data) ) as BaseMsg; // MsgPack
             switch (baseMsg.type) {
               case MSG_TYPE.RESPONSE:
                 this.rpcBus.emit( baseMsg.id.toString(), baseMsg);
