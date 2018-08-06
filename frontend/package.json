@@ -24,10 +24,11 @@
     "core-js": "^2.5.4",
     "font-awesome": "^4.7.0",
     "msgpack-lite": "^0.1.26",
-    "primeng": "^5.2.6",
+    "npm": "^6.3.0",
+    "primeng": "^6.1.0",
     "rxjs": "6.2.2",
-    "zone.js": "^0.8.26",
-    "ws": "^5.2.0"
+    "ws": "^5.2.0",
+    "zone.js": "^0.8.26"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.6.0",

@@ -6,6 +6,7 @@ export abstract class XResponse{
     constructor(public id: number) { }
 }
 
+
 export class XRoomList extends XResponse {
     constructor( id: number, public roomList: string) { 
         super(id);
@@ -14,11 +15,14 @@ export class XRoomList extends XResponse {
 export class XGetRoomList extends XRequest<XRoomList>{
 }
 
+
 export function call
     <Req extends XRequest<Resp>, Resp extends XResponse>
-    (request: Req, listener: (r: Resp) => void): void {
+    (ws: WebSocket, request: Req, listener: (r: Resp) => void): void {
+        // ws.send( request)
     listener( new XRoomList(2, "xxx") );
 }
+
 
 call(
     new XGetRoomList(2),

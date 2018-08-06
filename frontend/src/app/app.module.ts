@@ -7,6 +7,7 @@ import {ButtonModule} from 'primeng/button';
 import {RadioButtonModule} from 'primeng/radiobutton';
 import {CalendarModule} from 'primeng/calendar';
 import {ListboxModule} from 'primeng/listbox';
+import {TableModule} from 'primeng/table';
 
 import { AppComponent } from './components/app/app.component';
 import { RoomlistComponent } from './components/roomlist/roomslist.component';
@@ -39,7 +40,8 @@ import { AuthService } from './services/auth.service';
     RadioButtonModule,
     BrowserAnimationsModule,
     CalendarModule,
-    ListboxModule
+    ListboxModule,
+    TableModule
   ],
   providers: [
     WebsocketClientService,

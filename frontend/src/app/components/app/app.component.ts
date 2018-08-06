@@ -41,7 +41,7 @@ export class AppComponent implements OnInit {
       (msg: BaseMsg) => {
         const result = msg as AddResult;
         console.log( result.result);
-        this.rpcResp = result.result.toString();
+        this.rpcResp = `${a} + ${b} = ${result.result.toString()}`;
       }
     );
   }

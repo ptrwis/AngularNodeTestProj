@@ -1,9 +1,15 @@
 import { MSG_TYPE } from "./msg_types";
 import { BaseMsg } from "./generic";
 
+export class Room{
+    constructor(
+      public name: string,
+      public num_of_players: number
+    ){ }
+  }
 
 export class GetRoomList extends BaseMsg {
-    constructor( roomid: number){
+    constructor( ){
         super( MSG_TYPE.GET_ROOM_LIST);
     }
 }
