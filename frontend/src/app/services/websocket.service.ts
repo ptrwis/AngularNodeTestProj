@@ -2,66 +2,77 @@ import { Injectable } from '@angular/core';
 import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../../../../common/protocol/msg_types';
-import { BaseMsg } from '../../../../common/protocol/generic';
-// import * as WebSocket from 'ws';
+import { XBaseMsg, XRequest, XResponse, VoidResponse } from '../../../../common/protocol/generic';
 
 @Injectable()
 export class WebsocketClientService {
 
-    rpcBus: EventEmitter = new EventEmitter();
-    private ws: WebSocket;
+  wsurl: string;
+  rpcBus: EventEmitter = new EventEmitter();
+  private ws: WebSocket;
+  onOpenListeners: ((readyState: number) => void)[];
+  onCloseListeners: ((readyState: number) => void)[];
 
-    connect() {
-        if ( this.ws === undefined ) {
-          this.ws = new WebSocket('ws://localhost:8999');
-          this.ws.binaryType = 'arraybuffer';
-          this.ws.onmessage = (ev: MessageEvent) => {
-            // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
-            const baseMsg = msgpack.decode( new Uint8Array(ev.data) ) as BaseMsg; // MsgPack
-            switch (baseMsg.type) {
-              case MSG_TYPE.RESPONSE:
-                this.rpcBus.emit( baseMsg.id.toString(), baseMsg);
-              break;
-            }
-          };
-          this.ws.onclose = (ev: CloseEvent) => {
-            console.log(ev.reason);
-          };
+  constructor( ) {
+    this.wsurl = 'ws://localhost:8999';
+    this.ws = undefined;
+    this.onOpenListeners = [];
+    this.onCloseListeners = [];
+  }
+
+  connect() {
+    if (this.ws === undefined) {
+      this.ws = new WebSocket( this.wsurl );
+      this.ws.binaryType = 'arraybuffer'; // necessary!
+      this.ws.onmessage = (ev: MessageEvent) => {
+        // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK
+        // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
+        const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XResponse; // MsgPack
+        switch (baseMsg.type) {
+          case MSG_TYPE.RESPONSE:
+            this.rpcBus.emit(baseMsg.id.toString(), baseMsg);
+            break;
         }
+      };
+      this.ws.onopen = ( ev: Event ) => this.onOpenListeners.forEach( listener => listener(this.ws.readyState) );
+      this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach( listener => listener(0) );
     }
+  }
 
-    disconnect() {
-      // this.send( new RageQuit()); not here
+  disconnect() {
+    // this.send( new RageQuit()); not here
+    if ( this.ws !== undefined ) {
       this.ws.close();
       this.ws = undefined;
     }
+  }
 
-    async send( msg: BaseMsg) {
-      // this.ws.send( JSON.stringify(msg)); // JSON string
-      this.ws.send( msgpack.encode( msg ) ); // MsgPack
+  registerOnOpenListener( onOpenListener: (readyState: number) => void ) {
+    this.onOpenListeners.push( onOpenListener );
+  }
+  registerOnCloseListener( onCloseListener: (readyState: number) => void ) {
+    this.onCloseListeners.push( onCloseListener );
+  }
+
+  async send(msg: XBaseMsg) {
+    // this.ws.send( JSON.stringify(msg)); // JSON string
+    this.ws.send(msgpack.encode(msg)); // MsgPack
+  }
+
+  /**
+   * Maybe this will work in future Typescript
+   * For now, if reponse is of type VoidResponse (so there is no reponse),
+   * caller should not pass any listener.
+   */
+  call
+    <T extends XRequest<K>, K extends XResponse>
+    (req: T, listener?: (response: K) => void): void {
+    this.send(req); // send request through websocket
+    // subscribe on queue for response with the same msg id as req.id
+    // if ( K instanceof VoidResponse ) { return; }
+    if (listener !== undefined) {
+      this.rpcBus.on(req.id.toString(), listener);
     }
-
-    getState() {
-        if ( this.ws === undefined ) {
-            return 'undefined';
-        }
-        switch ( this.ws.readyState) {
-            case 0: return  'CONNECTING.0';
-            case 1: return  'OPEN.......1';
-            case 2: return  'CLOSING....2';
-            case 3: return  'CLOSED.....3';
-        }
-    }
-
-    /**
-     * TODO: In TypeScript 3.1:
-     * < T extends RpcRequest<K>, K extends RpcResponse >
-     * ( req: T, listener: (response: K) => void ): void {
-     */
-   call( req: BaseMsg, listener: (response: BaseMsg) => void ): void {
-       this.send( req); // send request through websocket
-       // subscribe on queue for response with the same msg id as req.id
-       this.rpcBus.on( req.id.toString(), listener);
-   }
+  }
 
 }

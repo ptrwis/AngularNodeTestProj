@@ -1,5 +1,5 @@
 import { MSG_TYPE } from "./msg_types";
-import { BaseMsg } from "./generic";
+import { XBaseMsg } from "./generic";
 
 // TODO: move it to Game.ts ?
 enum GAME_EVENT{
@@ -7,7 +7,7 @@ enum GAME_EVENT{
     TURN_RIGHT
 }
 
-export class GameAction extends BaseMsg {
+export class GameAction extends XBaseMsg {
     constructor( public ev: GAME_EVENT, 
                  public timestamp: number ){
         super( MSG_TYPE.ACTION );

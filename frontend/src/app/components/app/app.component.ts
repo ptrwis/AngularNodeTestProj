@@ -1,4 +1,3 @@
-import { BaseMsg } from './../../../../../common/protocol/generic';
 import { AddTwoNumbers, AddResult } from './../../../../../common/protocol/addition';
 import { Component, OnInit } from '@angular/core';
 import { WebsocketClientService } from './../../services/websocket.service';
@@ -11,18 +10,15 @@ import { WebsocketClientService } from './../../services/websocket.service';
 export class AppComponent implements OnInit {
 
   title = 'maj app';
-  wss: WebsocketClientService;
   rpcResp: string;
+  connState: string;
 
-  constructor( websocketService: WebsocketClientService) {
-    this.wss = websocketService;
+  constructor( private wss: WebsocketClientService) {
+    wss.registerOnOpenListener( (readyState) => this.connState = readyState.toString() );
+    wss.registerOnCloseListener( (readyState) => this.connState = readyState.toString() );
   }
 
   ngOnInit(): void {
-  }
-
-  getState() {
-    return this.wss.getState();
   }
 
   wsconnect() {
@@ -38,10 +34,9 @@ export class AppComponent implements OnInit {
     const b = Math.floor(Math.random() * 10);
     this.wss.call(
       new AddTwoNumbers(a, b),
-      (msg: BaseMsg) => {
-        const result = msg as AddResult;
-        console.log( result.result);
-        this.rpcResp = `${a} + ${b} = ${result.result.toString()}`;
+      (msg: AddResult) => {
+        console.log( msg.result);
+        this.rpcResp = `${a} + ${b} = ${msg.result.toString()}`;
       }
     );
   }

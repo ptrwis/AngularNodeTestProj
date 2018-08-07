@@ -1,12 +1,17 @@
-import { BaseMsg } from "./generic";
+import { XRequest, XResponse } from "./generic";
 import { MSG_TYPE } from "./msg_types";
 
-export class SignInMsg extends BaseMsg {
-    username: string;
-    password: string;
-    constructor( username: string, password: string) {
+export class SignInReq extends XRequest<SignInResp> {
+    hashed: string;
+    constructor( username: string, 
+                 password: string) {
         super( MSG_TYPE.SIGNIN);
-        this.username = username;
-        this.password = password;
+        this.hashed = username+password; // MD5
+    }
+}
+
+export class SignInResp extends XResponse {
+    constructor( req: SignInReq, public token: string ){
+        super( req );
     }
 }

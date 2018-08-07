@@ -1,7 +1,7 @@
 import { MSG_TYPE } from "./msg_types";
-import { BaseMsg } from "./generic";
+import { XRequest, XEvent, VoidResponse } from "./generic";
 
-export class JoinRoomMsg extends BaseMsg {
+export class JoinRoomMsg extends XRequest<VoidResponse> {
     roomid: number;
     constructor( roomid: number){
         super( MSG_TYPE.JOIN_ROOM);
@@ -9,7 +9,7 @@ export class JoinRoomMsg extends BaseMsg {
     }
 }
 
-export class PeerJoinedTheRoomMsg extends BaseMsg {
+export class PeerJoinedTheRoomMsg extends XEvent {
     peerid: number;
     peername: string;
     roomid: number;
