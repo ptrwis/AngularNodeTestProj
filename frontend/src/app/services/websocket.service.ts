@@ -4,6 +4,11 @@ import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../../../../common/protocol/msg_types';
 import { XBaseMsg, XRequest, XResponse, VoidResponse } from '../../../../common/protocol/generic';
 
+/**
+ * This service is used for communication with server through websocket.
+ * It is supposed to be a single instance injected in the main app component,
+ * and use everywhere where necessary
+ */
 @Injectable()
 export class WebsocketClientService {
 

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, NavigationExtras } from '@angular/router';
 import { WebsocketClientService } from '../../services/websocket.service';
+import { CreateRoomMsg, RoomCreatedResp } from './../../../../../common/protocol/create_room';
+import { Result } from '../../../../../common/protocol/msg_types';
 
 @Component({
   selector: 'createroom',
@@ -23,12 +25,22 @@ export class CreateRoomComponent implements OnInit {
   }
 
   onCreateRoomButtonClick(){
-    /*
     this.wss.call( 
-      new CreateRoom(this.roomname), 
-      (sr: SimpleResult) => sr.result == true ? route ... : sroute
+      new CreateRoomMsg(this.roomname), 
+      (resp: RoomCreatedResp) => { 
+        switch( resp.result ){
+          case Result.RESULT_OK:
+            let navigationExtras: NavigationExtras = {
+              queryParams: { 'room_id': resp.roomid }
+            };
+            this.router.navigate(['./inroom'], navigationExtras);
+          break;
+          case Result.RESULT_FAIL:
+            alert( resp.errormsg );
+          break;
+        }
+      }
     );
-    */
   }
 
 }

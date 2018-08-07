@@ -1,4 +1,4 @@
-import { MSG_TYPE } from "./msg_types";
+import { MSG_TYPE, Result } from "./msg_types";
 
 // just to mark classes
 // export interface PeerToServer { }
@@ -18,6 +18,9 @@ export class BaseMsg{
 }
 */
 
+/**
+ * It's only interface
+ */
 export interface XBaseMsg{
 }
 
@@ -37,10 +40,17 @@ export abstract class XRequest<T extends XResponse> implements XBaseMsg{
  */
 export abstract class XResponse implements XBaseMsg{
     id: number;
-    type: MSG_TYPE;
-    constructor( req: XRequest<XResponse>) {
+    type: MSG_TYPE = MSG_TYPE.RESPONSE;
+    /**
+     * 
+     * @param req on which request is this response for
+     * @param result ok or not ok
+     * @param errormsg error msg if not ok
+     */
+    constructor( req: XRequest<XResponse>, 
+                 public result: Result,
+                 public errormsg?: string){
         this.id = req.id;
-        this.type = MSG_TYPE.RESPONSE;
     }
 }
 
@@ -51,6 +61,11 @@ export abstract class XEvent implements XBaseMsg{
     constructor( public type: MSG_TYPE ){ }
 }
 
+/**
+ * Just a stub for requests without responses,
+ * it is however caller's responsibility to not
+ * pass listener when there is no reponse
+ */
 export class VoidResponse extends XResponse{
 
 }

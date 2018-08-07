@@ -6,9 +6,9 @@ import { GetRoomList, RoomList, Room } from '../../../../../common/protocol/get_
 @Component({
   selector: 'roomlist',
   template: `
-  <h3>room list</h3>
+  <h3>list of rooms awaiting for players to start</h3>
   <button (click)="onRefreshButtonClick()" >Refresh</button>
-  <button>Create</button>
+  <button (click)="onCreateRoomButtonClick()">Create Room</button>
   <p-table [value]="rooms">
     <ng-template pTemplate="header">
         <tr>
@@ -35,14 +35,7 @@ export class RoomlistComponent implements OnInit {
   ) {}
 
   refresh(){
-    this.rooms = [];
-    let numOfRooms = Math.floor(Math.random()*10)+1;
-    for( let i=0; i<numOfRooms; i++ ){
-      let numOfPlayers = Math.floor(Math.random()*10);
-      let roomName = 'Room_'+Math.floor(Math.random()*100);
-      this.rooms = [ new Room( roomName, numOfPlayers), ...this.rooms ];
-    }
-    // this.wss.call( new GetRoomList(), (rl: RoomList) => this.rooms = rl.rooms );
+    this.wss.call( new GetRoomList(), (rl: RoomList) => this.rooms = rl.rooms );
   }
 
   ngOnInit(): void {
@@ -51,6 +44,10 @@ export class RoomlistComponent implements OnInit {
 
   onRefreshButtonClick(){
     this.refresh();
+  }
+
+  onCreateRoomButtonClick(){
+    this.router.navigate(['./createroom']);
   }
 
 }

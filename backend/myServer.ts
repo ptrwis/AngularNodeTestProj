@@ -3,16 +3,15 @@ import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as msgpack from 'msgpack-lite';
-import { MSG_TYPE } from '../common/protocol/msg_types';
+import { MSG_TYPE, Result } from '../common/protocol/msg_types';
 import { XBaseMsg, XRequest } from '../common/protocol/generic';
 import { PeerJoinedTheRoomMsg, JoinRoomMsg } from '../common/protocol/join_room';
 import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../common/protocol/leave_room';
 import { ChatEvent, ChatMsg } from '../common/protocol/chat';
 import { ServerMsg } from '../common/protocol/server_msg';
-import { SimpleResult, Result } from '../common/protocol/simple_reponse';
-import { CreateRoomMsg, RoomHasBeenCreated } from '../common/protocol/create_room';
+import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/protocol/create_room';
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
-import { SignUpMsg } from '../common/protocol/sign_up';
+import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
 import { GetRoomList, Room, RoomList } from '../common/protocol/get_room_list';
 
 class UserEntity {
@@ -119,7 +118,7 @@ class GameServer {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
         let baseMsg = msgpack.decode(message) as XRequest<any>;
-        // TODO: safe casting
+        // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
             case MSG_TYPE.CHAT_MSG: {
@@ -156,11 +155,15 @@ class GameServer {
                 if (found == false) {
                     let newRoom = new ServerRoom(request.roomname);
                     this.rooms.set(newRoom.id, newRoom);
-                    sender.send(new SimpleResult(request, Result.RESULT_OK));
+                    sender.send( new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK) );
                     // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
-                    this.rooms.forEach(r => r.broadcast(sender, new RoomHasBeenCreated(request.roomname), true));
+                    this.rooms.forEach(r => r.broadcast(
+                        sender, 
+                        new RoomHasBeenCreated(new Room(request.roomname, 1, newRoom.id)), 
+                        true)
+                    );
                 } else {
-                    sender.send(new SimpleResult(request, Result.RESULT_FAIL, 'Server: Such room already exists!'));
+                    sender.send( new RoomCreatedResp( request, -1, Result.RESULT_FAIL, 'Server: Such room already exists!') );
                 }
             } break;
             case MSG_TYPE.SIGNIN: {
@@ -174,9 +177,9 @@ class GameServer {
                 let request = baseMsg as SignInReq;
             } break;
             case MSG_TYPE.SIGNUP: {
-                let request = baseMsg as SignUpMsg;
+                let request = baseMsg as SignUpReq;
                 usersDatabase.push(new UserEntity(request.username, request.password));
-                sender.send(new SimpleResult(request, Result.RESULT_OK));
+                sender.send(new SignUpResp(request, Result.RESULT_OK));
             } break;
             case MSG_TYPE.ADD: {
                 let request = baseMsg as AddTwoNumbers;

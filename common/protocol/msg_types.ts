@@ -34,3 +34,8 @@ export enum MSG_TYPE
     ROOM_HAS_BEEN_CREATED, // additionally, new rooms can be singaled by server
     ROOM_HAS_BEEN_CLOSED, // ... same as closing them
 }
+
+export enum Result{
+    RESULT_OK,
+    RESULT_FAIL
+}
