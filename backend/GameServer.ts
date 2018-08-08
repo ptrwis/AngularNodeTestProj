@@ -14,6 +14,9 @@ import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
 import { GetRoomList, Room, RoomList } from '../common/protocol/get_room_list';
 
+/**
+ * 
+ */
 class UserEntity {
     constructor(
         public id: number,
@@ -22,6 +25,9 @@ class UserEntity {
     }
 }
 
+/**
+ * 
+ */
 class UserDatabase {
 
     userIdSeq: number;
@@ -38,11 +44,11 @@ class UserDatabase {
     }
 
     findByCredentials(username: string, password: string) {
-        this.userbase.find((x) => x.username === username && x.password === password);
+        return this.userbase.find((x) => x.username === username && x.password === password);
     }
 
     findById(id: number) {
-        this.userbase.find((x) => x.id === id);
+        return this.userbase.find((x) => x.id === id);
     }
 
     insert(username: string, password: string) {
@@ -67,6 +73,7 @@ class Peer {
     send(msg: XBaseMsg) {
         // this.ws.send( JSON.stringify(msg) );
         this.ws.send(msgpack.encode(msg));
+        console.log( msg );
     }
     // don't encode, useful for broadcasts (msg is encoded once and as such broadcasted)
     justSend(msg: Buffer) {
@@ -141,7 +148,8 @@ class GameServer {
     route(sender: Peer, message: Buffer) {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
-        let baseMsg = msgpack.decode(message) as XRequest<any>;
+        let baseMsg = msgpack.decode( message ) as XRequest<any>;
+        console.log( baseMsg );
         // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
@@ -171,10 +179,10 @@ class GameServer {
                 let request = baseMsg as CreateRoomMsg;
                 // todo; check if not exists
                 let found = false;
-                if (found == false) {
+                /* if (found == true) {
                     sender.send(new RoomCreatedResp(request, -1, Result.RESULT_FAIL, 'Server: Such room already exists!'));
                     return;
-                }
+                } */
                 let newRoom = new ServerRoom(request.roomname);
                 this.rooms.set(newRoom.id, newRoom);
                 sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));

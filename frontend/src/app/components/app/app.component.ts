@@ -21,15 +21,15 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
   }
 
-  wsconnect() {
+  onConnectButtonClick() {
     this.wss.connect();
   }
 
-  wsdisconnect() {
+  onDisconnectButtonClick() {
     this.wss.disconnect();
   }
 
-  rpcRequest() {
+  on_makeRpcRequest_BtnClick() {
     const a = Math.floor(Math.random() * 10);
     const b = Math.floor(Math.random() * 10);
     this.wss.call(

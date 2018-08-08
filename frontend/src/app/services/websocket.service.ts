@@ -18,50 +18,64 @@ export class WebsocketClientService {
   onOpenListeners: ((readyState: number) => void)[];
   onCloseListeners: ((readyState: number) => void)[];
 
-  constructor( ) {
+  constructor() {
     this.wsurl = 'ws://localhost:8999';
     this.ws = undefined;
     this.onOpenListeners = [];
     this.onCloseListeners = [];
+    console.log('WebsocketClientService constructor');
   }
 
   connect() {
-    if (this.ws === undefined) {
-      this.ws = new WebSocket( this.wsurl );
-      this.ws.binaryType = 'arraybuffer'; // necessary!
-      this.ws.onmessage = (ev: MessageEvent) => {
-        // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK
-        // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
-        const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XResponse; // MsgPack
-        switch (baseMsg.type) {
-          case MSG_TYPE.RESPONSE:
-            this.rpcBus.emit(baseMsg.id.toString(), baseMsg);
-            break;
-        }
-      };
-      this.ws.onopen = ( ev: Event ) => this.onOpenListeners.forEach( listener => listener(this.ws.readyState) );
-      this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach( listener => listener(0) );
-    }
+    if (this.isConnected() === true)
+      return;
+    this.ws = new WebSocket(this.wsurl);
+    this.ws.binaryType = 'arraybuffer'; // necessary!
+    this.ws.onmessage = (ev: MessageEvent) => {
+      // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK
+      // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
+      const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XResponse; // MsgPack
+      console.log(baseMsg);
+      switch (baseMsg.type) {
+        case MSG_TYPE.RESPONSE:
+          this.rpcBus.emit(baseMsg.id.toString(), baseMsg);
+          break;
+      }
+    };
+    // TODO: remove listeners, and when?
+    this.ws.onopen = (ev: Event) => this.onOpenListeners.forEach(listener => {
+      listener(this.ws.readyState);
+      // this.onOpenListeners.pop();
+    });
+    this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach(listener => {
+      listener(0);
+      // this.onCloseListeners.pop();
+    });
   }
 
   disconnect() {
     // this.send( new RageQuit()); not here
-    if ( this.ws !== undefined ) {
+    if (this.ws !== undefined) {
       this.ws.close();
       this.ws = undefined;
     }
   }
 
-  registerOnOpenListener( onOpenListener: (readyState: number) => void ) {
-    this.onOpenListeners.push( onOpenListener );
+  isConnected() {
+    return this.ws !== undefined && this.ws.readyState === 1;
   }
-  registerOnCloseListener( onCloseListener: (readyState: number) => void ) {
-    this.onCloseListeners.push( onCloseListener );
+
+  registerOnOpenListener(onOpenListener: (readyState: number) => void) {
+    this.onOpenListeners.push(onOpenListener);
+  }
+  registerOnCloseListener(onCloseListener: (readyState: number) => void) {
+    this.onCloseListeners.push(onCloseListener);
   }
 
   async send(msg: XBaseMsg) {
     // this.ws.send( JSON.stringify(msg)); // JSON string
     this.ws.send(msgpack.encode(msg)); // MsgPack
+    console.log(msg);
   }
 
   /**
@@ -71,13 +85,14 @@ export class WebsocketClientService {
    */
   call
     <T extends XRequest<K>, K extends XResponse>
-    (req: T, listener?: (response: K) => void): void {
+    (req: T, listener?: (response: K) => any): any {
     this.send(req); // send request through websocket
     // subscribe on queue for response with the same msg id as req.id
     // if ( K instanceof VoidResponse ) { return; }
     if (listener !== undefined) {
       this.rpcBus.on(req.id.toString(), listener);
     }
+    return undefined;
   }
 
 }

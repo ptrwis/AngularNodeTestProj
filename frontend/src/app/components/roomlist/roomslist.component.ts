@@ -14,12 +14,14 @@ import { GetRoomList, RoomList, Room } from '../../../../../common/protocol/get_
         <tr>
             <th>Name</th>
             <th>#Players</th>
+            <th>room id</th>
         </tr>
     </ng-template>
     <ng-template pTemplate="body" let-room>
         <tr>
             <td>{{room.name}}</td>
             <td>{{room.num_of_players}}</td>
+            <td>{{room.id}}</td>
         </tr>
     </ng-template>
   </p-table>
