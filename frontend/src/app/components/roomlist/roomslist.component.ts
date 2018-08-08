@@ -34,7 +34,7 @@ export class RoomlistComponent implements OnInit {
     private router: Router,
   ) {}
 
-  refresh(){
+  refresh() {
     this.wss.call( new GetRoomList(), (rl: RoomList) => this.rooms = rl.rooms );
   }
 
@@ -42,11 +42,11 @@ export class RoomlistComponent implements OnInit {
     this.refresh();
   }
 
-  onRefreshButtonClick(){
+  onRefreshButtonClick() {
     this.refresh();
   }
 
-  onCreateRoomButtonClick(){
+  onCreateRoomButtonClick() {
     this.router.navigate(['./createroom']);
   }
 

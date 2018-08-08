@@ -16,28 +16,51 @@ import { GetRoomList, Room, RoomList } from '../common/protocol/get_room_list';
 
 class UserEntity {
     constructor(
+        public id: number,
         public username: string,
         public password: string) {
     }
 }
-let usersDatabase: UserEntity[] = [
-    new UserEntity('John Rambo', 'qwe'),
-    new UserEntity('Billy The Kid', 'asd'),
-    new UserEntity('Dirty Harry', 'zxc'),
-];
+
+class UserDatabase {
+
+    userIdSeq: number;
+    userbase: UserEntity[];
+
+    constructor() {
+        this.userbase = [
+            new UserEntity(1, 'qwe', 'qwe'),
+            new UserEntity(2, 'asd', 'asd'),
+            new UserEntity(3, 'zxc', 'zxc'),
+        ];
+        const max = this.userbase.reduce((a, b) => a.id > b.id ? a : b);
+        this.userIdSeq = max.id;
+    }
+
+    findByCredentials(username: string, password: string) {
+        this.userbase.find((x) => x.username === username && x.password === password);
+    }
+
+    findById(id: number) {
+        this.userbase.find((x) => x.id === id);
+    }
+
+    insert(username: string, password: string) {
+        this.userbase.push(new UserEntity(++this.userIdSeq, username, password));
+        return this.userIdSeq;
+    }
+
+} let userDatabase = new UserDatabase();
 
 /**
  * 
  */
 class Peer {
-    id: number;
-    // userEntity: UserEntity; // TODO: guests
     rooms: ServerRoom[];
-    ws: WebSocket;
+    // requestPerSecondCounter // increase on every request, if too much- kick fucker
 
-    constructor(id: number, ws: WebSocket) {
-        this.id = id;
-        this.ws = ws;
+    constructor(public user: UserEntity, // negative id means guest
+        public ws: WebSocket) {
         this.rooms = [];
     }
     // send msg to this peer
@@ -57,6 +80,7 @@ class Peer {
         this.rooms = this.rooms.filter((p) => p.roomname !== room.roomname);
         room.leave(this);
     }
+    isGuest() { this.user.id < 0; }
 }
 
 
@@ -79,14 +103,14 @@ class ServerRoom {
         if (excludeSender === false) {
             this.peers.forEach(peer => peer.justSend(m));
         } else {
-            this.peers.forEach(peer => peer.id === sender.id ? peer.justSend(m) : null);
+            this.peers.forEach(peer => peer.user.id === sender.user.id ? peer.justSend(m) : null);
         }
     }
     join(peer: Peer) {
         this.peers.push(peer);
         this.broadcast(
             peer,
-            new PeerJoinedTheRoomMsg(peer.id, `Guest ${peer.id}`, this.id),
+            new PeerJoinedTheRoomMsg(peer.user.id, `Guest ${peer.user.id}`, this.id),
             true
         );
         peer.send(new ServerMsg(`You have joined room ${this.roomname}`));
@@ -94,10 +118,10 @@ class ServerRoom {
     leave(peer: Peer) {
         this.broadcast(
             peer,
-            new PeerLeftTheRoomMsg(peer.id, this.id),
+            new PeerLeftTheRoomMsg(peer.user.id, this.id),
             true
         );
-        this.peers = this.peers.filter((p) => p.id !== peer.id);
+        this.peers = this.peers.filter((p) => p.user.id !== peer.user.id);
     }
 }
 
@@ -126,7 +150,7 @@ class GameServer {
                 this.runCallbackWithGuard(sender, chatMsg.roomid,
                     (room: ServerRoom) => room.broadcast(
                         sender,
-                        new ChatEvent(sender.id, `${sender.id}: ${message}`, room.id),
+                        new ChatEvent(sender.user.id, `${sender.user.id}: ${message}`, room.id),
                         true
                     )
                 );
@@ -140,45 +164,41 @@ class GameServer {
             case MSG_TYPE.LEAVE_THE_ROOM: {
                 let request = baseMsg as LeaveTheRoomMsg;
                 this.runCallbackWithGuard(sender, request.roomid,
-                    (room: ServerRoom) => room.broadcast(sender, new PeerLeftTheRoomMsg(sender.id, room.id), true)
+                    (room: ServerRoom) => room.broadcast(sender, new PeerLeftTheRoomMsg(sender.user.id, room.id), true)
                 );
             } break;
             case MSG_TYPE.CREATE_ROOM: {
                 let request = baseMsg as CreateRoomMsg;
+                // todo; check if not exists
                 let found = false;
-                this.rooms.forEach((k, v) => { // find room by roomname
-                    if (k.roomname === request.roomname) {
-                        found = true;
-                        // break;  // TODO: Jump target cannot cross function boundary
-                    }
-                });
                 if (found == false) {
-                    let newRoom = new ServerRoom(request.roomname);
-                    this.rooms.set(newRoom.id, newRoom);
-                    sender.send( new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK) );
-                    // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
-                    this.rooms.forEach(r => r.broadcast(
-                        sender, 
-                        new RoomHasBeenCreated(new Room(request.roomname, 1, newRoom.id)), 
-                        true)
-                    );
-                } else {
-                    sender.send( new RoomCreatedResp( request, -1, Result.RESULT_FAIL, 'Server: Such room already exists!') );
+                    sender.send(new RoomCreatedResp(request, -1, Result.RESULT_FAIL, 'Server: Such room already exists!'));
+                    return;
                 }
+                let newRoom = new ServerRoom(request.roomname);
+                this.rooms.set(newRoom.id, newRoom);
+                sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
+                // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
+                this.rooms.forEach(r => r.broadcast(
+                    sender,
+                    new RoomHasBeenCreated(new Room(request.roomname, 1, newRoom.id)),
+                    true
+                ));
             } break;
             case MSG_TYPE.SIGNIN: {
-                // We can allow Guests playing 
-                // const user = usersDatabase.find( username, password);
-                // send back a token
-                // --> DO WE NEED IT ?! after all connection is stateful, after signing in we are holding the peer, we dont need to
-                //      authenticate him on every request
-                //          --> user might disconnect, so we might generate him the token, he will use it when trying to reconnect
-                // btw: kick guests with inactive fpr some time.
                 let request = baseMsg as SignInReq;
+                let usr = userDatabase.findByCredentials(request.username, request.password);
+                if (usr === undefined) {
+                    sender.send(new SignInResp(request, Result.RESULT_FAIL, "Bad crdentials"));
+                } else {
+                    sender.user = usr;
+                    sender.send(new SignInResp(request, Result.RESULT_OK));
+                }
             } break;
             case MSG_TYPE.SIGNUP: {
                 let request = baseMsg as SignUpReq;
-                usersDatabase.push(new UserEntity(request.username, request.password));
+                let userId = userDatabase.insert(request.username, request.password);
+                // send email
                 sender.send(new SignUpResp(request, Result.RESULT_OK));
             } break;
             case MSG_TYPE.ADD: {
@@ -223,7 +243,8 @@ let myServer = new GameServer();
 
 wss.on('connection', (ws: WebSocket) => {
     // this works like closure- peer will be remembered
-    let peer = new Peer(Math.floor(Math.random() * 100_000) + 1, ws);
+    let guestId = (- 1 - Math.floor(Math.random() * 100_000));
+    let peer = new Peer(new UserEntity(guestId, "", ""), ws);
     ws.on('message', (message: Buffer) => myServer.route(peer, message));
     ws.on('close', () => myServer.rageQuit(peer));
 });

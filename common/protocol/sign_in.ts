@@ -1,17 +1,15 @@
 import { XRequest, XResponse } from "./generic";
-import { MSG_TYPE } from "./msg_types";
+import { MSG_TYPE, Result } from "./msg_types";
 
 export class SignInReq extends XRequest<SignInResp> {
-    hashed: string;
-    constructor( username: string, 
-                 password: string) {
+    constructor( public username: string, 
+                 public password: string) {
         super( MSG_TYPE.SIGNIN);
-        this.hashed = username+password; // MD5
     }
 }
 
 export class SignInResp extends XResponse {
-    constructor( req: SignInReq, public token: string ){
-        super( req );
+    constructor( req: SignInReq, result: Result, err_msg?: string ){
+        super( req, result, err_msg );
     }
 }
