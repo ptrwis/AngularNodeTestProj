@@ -1,7 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, NavigationExtras } from '@angular/router';
 import { WebsocketClientService } from '../../services/websocket.service';
 import { GetRoomList, RoomList, Room } from '../../../../../common/protocol/get_room_list';
+import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
+import { Result } from '../../../../../common/protocol/msg_types';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'roomlist',
@@ -32,6 +35,7 @@ export class RoomlistComponent implements OnInit {
   rooms: Room[];
 
   constructor(
+    private authService: AuthService,
     private wss: WebsocketClientService,
     private router: Router,
   ) {}
@@ -49,7 +53,19 @@ export class RoomlistComponent implements OnInit {
   }
 
   onCreateRoomButtonClick() {
-    this.router.navigate(['./createroom']);
+    this.wss.call(
+      new CreateRoomMsg( `${this.authService.username}'s room` ), // TODO: + user_id / owner_id
+      (resp: RoomCreatedResp) => {
+        switch ( resp.result ) {
+          case Result.RESULT_OK:
+            this.router.navigate( ['./createroom', +resp.roomid] );
+          break;
+          case Result.RESULT_FAIL:
+            alert( resp.errormsg );
+          break;
+        }
+      }
+    );
   }
 
 }

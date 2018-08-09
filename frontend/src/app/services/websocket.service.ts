@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../../../../common/protocol/msg_types';
-import { XBaseMsg, XRequest, XResponse, VoidResponse } from '../../../../common/protocol/generic';
+import { XBaseMsg, XRequest, XResponse, VoidResponse, XEvent } from '../../../../common/protocol/generic';
 
 /**
  * This service is used for communication with server through websocket.
@@ -27,8 +27,9 @@ export class WebsocketClientService {
   }
 
   connect() {
-    if (this.isConnected() === true)
+    if (this.isConnected() === true) {
       return;
+    }
     this.ws = new WebSocket(this.wsurl);
     this.ws.binaryType = 'arraybuffer'; // necessary!
     this.ws.onmessage = (ev: MessageEvent) => {
@@ -43,14 +44,8 @@ export class WebsocketClientService {
       }
     };
     // TODO: remove listeners, and when?
-    this.ws.onopen = (ev: Event) => this.onOpenListeners.forEach(listener => {
-      listener(this.ws.readyState);
-      // this.onOpenListeners.pop();
-    });
-    this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach(listener => {
-      listener(0);
-      // this.onCloseListeners.pop();
-    });
+    this.ws.onopen = (ev: Event) => this.onOpenListeners.forEach( listener => listener(this.ws.readyState) );
+    this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach( listener => listener(0) );
   }
 
   disconnect() {
@@ -71,6 +66,10 @@ export class WebsocketClientService {
   registerOnCloseListener(onCloseListener: (readyState: number) => void) {
     this.onCloseListeners.push(onCloseListener);
   }
+
+  /* subscribeOnMessage<T extends XEvent>( listener: ( event: T ) => void ) {
+    this.rpcBus.on( req.id.toString(), listener);
+  } */
 
   async send(msg: XBaseMsg) {
     // this.ws.send( JSON.stringify(msg)); // JSON string

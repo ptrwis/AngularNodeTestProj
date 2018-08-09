@@ -1,9 +1,6 @@
 import { Vec2d } from './../../../../../common/game/vec2d';
-import { MyEnum } from './../../domain/myenum';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef } from '@angular/core';
-import { Developer } from './../../domain/developer';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Location } from '@angular/common';
 
 @Component({
   selector: 'gameplay',

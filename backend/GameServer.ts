@@ -13,6 +13,7 @@ import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/pr
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
 import { GetRoomList, Room, RoomList } from '../common/protocol/get_room_list';
+import { GetRoomDetails, RoomDetailsResp } from '../common/protocol/get_room';
 
 /**
  * 
@@ -100,7 +101,7 @@ class ServerRoom {
     peers: Peer[];
     roomname: string;
     constructor(name: string) {
-        this.id = ServerRoom.idcounter++;
+        this.id = ++ServerRoom.idcounter;
         this.peers = [];
         this.roomname = name;
     }
@@ -149,7 +150,7 @@ class GameServer {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
         let baseMsg = msgpack.decode( message ) as XRequest<any>;
-        console.log( baseMsg );
+        console.log( `Request: ${baseMsg}` );
         // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
@@ -219,8 +220,22 @@ class GameServer {
                 // TODO: cache it, change when room is created or removed
                 let rooms: Room[] = [];
                 this.rooms.forEach((v, k) => rooms.push(new Room(v.roomname, v.peers.length, k)));
-                const response = new RoomList(rooms, request);
-                sender.send(response);
+                sender.send( new RoomList(rooms, request) );
+            } break;
+            case MSG_TYPE.GET_ROOM_DETAILS: {
+                let request = baseMsg as GetRoomDetails;
+                let room = this.rooms.get( request.room_id );
+                if( room === undefined ){
+                    sender.send( new RoomDetailsResp( new Room("",0,0), request, Result.RESULT_FAIL, "No such room exists!") );
+                    return;
+                }
+                sender.send( 
+                    new RoomDetailsResp( 
+                        new Room(room.roomname, room.peers.length, room.id), 
+                        request, 
+                        Result.RESULT_FAIL, "No such room exists!"
+                    ) 
+                );
             } break;
         }
     }

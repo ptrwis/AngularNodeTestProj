@@ -48,7 +48,7 @@ export class SignInComponent implements OnInit, OnDestroy {
     }
   }
 
-  signIn(){
+  signIn() {
     this.authService.login(this.username, this.password,
       // ... after getting response (signing in went ok or not) route or show error
       (resp) => {
