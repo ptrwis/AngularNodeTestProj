@@ -1,6 +1,6 @@
 import { XRequest, XBaseMsg, VoidResponse, XEvent, XResponse } from "./generic";
 import { MSG_TYPE, Result } from "./msg_types";
-import { Room } from "./get_room_list";
+import { Room } from "./dto/room";
 
 export class CreateRoomMsg extends XRequest<RoomCreatedResp> {
     roomname: string;

@@ -12,7 +12,9 @@ import { ServerMsg } from '../common/protocol/server_msg';
 import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/protocol/create_room';
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
-import { GetRoomList, Room, RoomList } from '../common/protocol/get_room_list';
+import { GetRoomList, RoomList } from '../common/protocol/get_room_list';
+import { Room } from '../common/protocol/dto/room';
+import { Player } from '../common/protocol/dto/player';
 import { GetRoomDetails, RoomDetailsResp } from '../common/protocol/get_room';
 
 /**
@@ -226,14 +228,22 @@ class GameServer {
                 let request = baseMsg as GetRoomDetails;
                 let room = this.rooms.get( request.room_id );
                 if( room === undefined ){
-                    sender.send( new RoomDetailsResp( new Room("",0,0), request, Result.RESULT_FAIL, "No such room exists!") );
+                    sender.send( 
+                        new RoomDetailsResp( 
+                            new Room("",0,0), 
+                            [], // empty array of players
+                            request, 
+                            Result.RESULT_FAIL, "No such room exists!"
+                        )
+                    );
                     return;
                 }
                 sender.send( 
                     new RoomDetailsResp( 
                         new Room(room.roomname, room.peers.length, room.id), 
+                        room.peers.map( p => new Player(p.user.id, p.user.username) ),
                         request, 
-                        Result.RESULT_FAIL, "No such room exists!"
+                        Result.RESULT_OK
                     ) 
                 );
             } break;

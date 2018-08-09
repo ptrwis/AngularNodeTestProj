@@ -21,15 +21,17 @@ export class BaseMsg{
 /**
  * It's only interface
  */
-export interface XBaseMsg{
+export class XBaseMsg{
+    constructor( public type: MSG_TYPE ){ }
 }
 
 /**
  * 
  */
-export abstract class XRequest<T extends XResponse> implements XBaseMsg{
+export abstract class XRequest<T extends XResponse> extends XBaseMsg{
     id: number;
-    constructor( public type: MSG_TYPE){
+    constructor( type: MSG_TYPE){
+        super( type );
         this.id = Math.floor(Math.random() * 10000);
     }
 }
@@ -38,9 +40,8 @@ export abstract class XRequest<T extends XResponse> implements XBaseMsg{
  * Response doesnt have to have type, but must have id (the same as request- 
  * this is how we'll know what request is thi response for)
  */
-export abstract class XResponse implements XBaseMsg{
+export abstract class XResponse extends XBaseMsg{
     id: number;
-    type: MSG_TYPE = MSG_TYPE.RESPONSE;
     /**
      * 
      * @param req on which request is this response for
@@ -50,6 +51,7 @@ export abstract class XResponse implements XBaseMsg{
     constructor( req: XRequest<XResponse>, 
                  public result: Result,
                  public errormsg?: string){
+        super( MSG_TYPE.RESPONSE );
         this.id = req.id;
     }
 }
@@ -57,8 +59,10 @@ export abstract class XResponse implements XBaseMsg{
 /**
  * Event has only type
  */
-export abstract class XEvent implements XBaseMsg{
-    constructor( public type: MSG_TYPE ){ }
+export abstract class XEvent extends XBaseMsg{
+    constructor( type: MSG_TYPE ){
+        super( type );
+    }
 }
 
 /**

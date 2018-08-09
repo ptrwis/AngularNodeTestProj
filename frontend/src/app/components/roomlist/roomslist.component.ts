@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, NavigationExtras } from '@angular/router';
 import { WebsocketClientService } from '../../services/websocket.service';
-import { GetRoomList, RoomList, Room } from '../../../../../common/protocol/get_room_list';
+import { GetRoomList, RoomList } from '../../../../../common/protocol/get_room_list';
 import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
 import { Result } from '../../../../../common/protocol/msg_types';
+import { Room } from '../../../../../common/protocol/dto/room';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -12,7 +13,11 @@ import { AuthService } from '../../services/auth.service';
   <h3>list of rooms awaiting for players to start</h3>
   <button (click)="onRefreshButtonClick()" >Refresh</button>
   <button (click)="onCreateRoomButtonClick()">Create Room</button>
-  <p-table [value]="rooms">
+  <p-table [value]="rooms" 
+           selectionMode="single" 
+           [(selection)]="selectedRoom" 
+           (onRowSelect)="onRowSelect($event)" 
+           dataKey="id" >
     <ng-template pTemplate="header">
         <tr>
             <th>Name</th>
@@ -20,8 +25,8 @@ import { AuthService } from '../../services/auth.service';
             <th>room id</th>
         </tr>
     </ng-template>
-    <ng-template pTemplate="body" let-room>
-        <tr>
+    <ng-template pTemplate="body" let-room >
+        <tr [pSelectableRow]="room" >
             <td>{{room.name}}</td>
             <td>{{room.num_of_players}}</td>
             <td>{{room.id}}</td>
@@ -33,6 +38,7 @@ import { AuthService } from '../../services/auth.service';
 export class RoomlistComponent implements OnInit {
 
   rooms: Room[];
+  selectedRoom: Room;
 
   constructor(
     private authService: AuthService,
@@ -46,6 +52,11 @@ export class RoomlistComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+  }
+  
+  onRowSelect(event) {
+    console.log( `navigate to ${this.selectedRoom.id}` );
+    this.router.navigate( ['./createroom', +event.data.id] );
   }
 
   onRefreshButtonClick() {

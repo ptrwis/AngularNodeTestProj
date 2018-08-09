@@ -3,6 +3,8 @@ import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE } from '../../../../common/protocol/msg_types';
 import { XBaseMsg, XRequest, XResponse, VoidResponse, XEvent } from '../../../../common/protocol/generic';
+import { PeerJoinedTheRoomMsg } from '../../../../common/protocol/join_room';
+import { LeaveTheRoomMsg } from '../../../../common/protocol/leave_room';
 
 /**
  * This service is used for communication with server through websocket.
@@ -30,16 +32,25 @@ export class WebsocketClientService {
     if (this.isConnected() === true) {
       return;
     }
-    this.ws = new WebSocket(this.wsurl);
+    this.ws = new WebSocket( this.wsurl );
     this.ws.binaryType = 'arraybuffer'; // necessary!
     this.ws.onmessage = (ev: MessageEvent) => {
       // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK
       // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
-      const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XResponse; // MsgPack
-      console.log(baseMsg);
-      switch (baseMsg.type) {
+      const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XBaseMsg; // MsgPack
+      // const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XEvent; 
+      console.log( baseMsg );
+      switch ( baseMsg.type ) {
         case MSG_TYPE.RESPONSE:
-          this.rpcBus.emit(baseMsg.id.toString(), baseMsg);
+          let response = baseMsg as XResponse;
+          this.rpcBus.emit( response.id.toString(), baseMsg);
+          break;
+        // EVENTS:
+        case MSG_TYPE.PEER_JOINED_THE_ROOM:
+          this.rpcBus.emit( PeerJoinedTheRoomMsg.name , baseMsg);
+          break;
+        case MSG_TYPE.PEER_LEFT_THE_ROOM:
+          this.rpcBus.emit( LeaveTheRoomMsg.name , baseMsg);
           break;
       }
     };
@@ -61,15 +72,16 @@ export class WebsocketClientService {
   }
 
   registerOnOpenListener(onOpenListener: (readyState: number) => void) {
-    this.onOpenListeners.push(onOpenListener);
+    this.onOpenListeners.push( onOpenListener );
   }
   registerOnCloseListener(onCloseListener: (readyState: number) => void) {
-    this.onCloseListeners.push(onCloseListener);
+    this.onCloseListeners.push( onCloseListener );
   }
 
-  /* subscribeOnMessage<T extends XEvent>( listener: ( event: T ) => void ) {
-    this.rpcBus.on( req.id.toString(), listener);
-  } */
+  subscribeOnMessage<T extends XEvent>( listener: ( event: T ) => void ) {
+    let runtimeTypename = event.constructor.name;
+    this.rpcBus.on( runtimeTypename, listener);
+  }
 
   async send(msg: XBaseMsg) {
     // this.ws.send( JSON.stringify(msg)); // JSON string
