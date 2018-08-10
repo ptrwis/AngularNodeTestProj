@@ -6,6 +6,7 @@ import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/c
 import { Result } from '../../../../../common/protocol/msg_types';
 import { Room } from '../../../../../common/protocol/dto/room';
 import { AuthService } from '../../services/auth.service';
+import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
 
 @Component({
   selector: 'roomlist',
@@ -53,9 +54,11 @@ export class RoomlistComponent implements OnInit {
   ngOnInit(): void {
     this.refresh();
   }
-  
+
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
+    // TODO: introduce 'onSendListener'
+    this.wss.call( new JoinRoomMsg(this.selectedRoom.id) );
     this.router.navigate( ['./createroom', +event.data.id] );
   }
 

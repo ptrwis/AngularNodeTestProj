@@ -38,18 +38,20 @@ export class WebsocketClientService {
       // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK
       // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
       const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XBaseMsg; // MsgPack
-      // const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XEvent; 
+      // const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XEvent;
       console.log( baseMsg );
       switch ( baseMsg.type ) {
         case MSG_TYPE.RESPONSE:
-          let response = baseMsg as XResponse;
+          const response = baseMsg as XResponse;
           this.rpcBus.emit( response.id.toString(), baseMsg);
           break;
         // EVENTS:
         case MSG_TYPE.PEER_JOINED_THE_ROOM:
+          console.log( `PEER_JOINED_THE_ROOM ${PeerJoinedTheRoomMsg.name}` );
           this.rpcBus.emit( PeerJoinedTheRoomMsg.name , baseMsg);
           break;
         case MSG_TYPE.PEER_LEFT_THE_ROOM:
+          console.log( `PEER_LEFT_THE_ROOM ${LeaveTheRoomMsg.name}` );
           this.rpcBus.emit( LeaveTheRoomMsg.name , baseMsg);
           break;
       }
@@ -79,7 +81,7 @@ export class WebsocketClientService {
   }
 
   subscribeOnMessage<T extends XEvent>( listener: ( event: T ) => void ) {
-    let runtimeTypename = event.constructor.name;
+    const runtimeTypename = event.constructor.name;
     this.rpcBus.on( runtimeTypename, listener);
   }
 

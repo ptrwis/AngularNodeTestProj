@@ -57,9 +57,11 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
         }
       );
       this.wss.subscribeOnMessage<PeerJoinedTheRoomMsg>( (msg: PeerJoinedTheRoomMsg) => {
-        this.players = this.players.filter( p => p.id !== msg.peerid );
+        console.log( `adding player ${msg.peername} ${msg.peerid}` );
+        this.players.push( new Player(msg.peerid, msg.peername) );
       } );
       this.wss.subscribeOnMessage<PeerLeftTheRoomMsg>( (msg: PeerLeftTheRoomMsg) => {
+        console.log( `removing player ${msg.peerid}` );
         this.players = this.players.filter( p => p.id !== msg.peerid );
       } );
     });
