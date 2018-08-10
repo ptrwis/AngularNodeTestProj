@@ -27,6 +27,12 @@ export enum MSG_TYPE
     // he knows the type of request
     RESPONSE, 
 
+    // EVENT (EVENT_TYPE)
+    EVENT
+}
+
+export enum EVENT_TYPE
+{
     // broadcast / events
     CHAT_EVENT, // from server to peers
     PEER_LEFT_THE_ROOM, // server to other peers

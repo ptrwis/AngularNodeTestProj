@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
-import { MSG_TYPE } from '../../../../common/protocol/msg_types';
+import { MSG_TYPE, EVENT_TYPE } from '../../../../common/protocol/msg_types';
 import { XBaseMsg, XRequest, XResponse, VoidResponse, XEvent } from '../../../../common/protocol/generic';
 import { PeerJoinedTheRoomMsg } from '../../../../common/protocol/join_room';
-import { LeaveTheRoomMsg } from '../../../../common/protocol/leave_room';
+import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../../../../common/protocol/leave_room';
+import { RoomHasBeenCreated } from '../../../../common/protocol/create_room';
 
 /**
  * This service is used for communication with server through websocket.
@@ -46,13 +47,10 @@ export class WebsocketClientService {
           this.rpcBus.emit( response.id.toString(), baseMsg);
           break;
         // EVENTS:
-        case MSG_TYPE.PEER_JOINED_THE_ROOM:
-          console.log( `PEER_JOINED_THE_ROOM ${PeerJoinedTheRoomMsg.name}` );
-          this.rpcBus.emit( PeerJoinedTheRoomMsg.name , baseMsg);
-          break;
-        case MSG_TYPE.PEER_LEFT_THE_ROOM:
-          console.log( `PEER_LEFT_THE_ROOM ${LeaveTheRoomMsg.name}` );
-          this.rpcBus.emit( LeaveTheRoomMsg.name , baseMsg);
+        case MSG_TYPE.EVENT:
+          const event = baseMsg as XEvent;
+          const key = `x${event.event_type}`;
+          this.rpcBus.emit( key , event);
           break;
       }
     };
@@ -73,6 +71,10 @@ export class WebsocketClientService {
     return this.ws !== undefined && this.ws.readyState === 1;
   }
 
+  /**
+   * Lifecycle listeners
+   * @param onOpenListener 
+   */
   registerOnOpenListener(onOpenListener: (readyState: number) => void) {
     this.onOpenListeners.push( onOpenListener );
   }
@@ -80,9 +82,13 @@ export class WebsocketClientService {
     this.onCloseListeners.push( onCloseListener );
   }
 
-  subscribeOnMessage<T extends XEvent>( listener: ( event: T ) => void ) {
-    const runtimeTypename = event.constructor.name;
-    this.rpcBus.on( runtimeTypename, listener);
+  /**
+   * subscription to particular event
+   * typename must correspond to  T
+   * @param listener 
+   */
+  subscribeOnMessage<T extends XEvent>( typename: string,  listener: ( event: T ) => void ) {
+    this.rpcBus.on( typename, listener);
   }
 
   async send(msg: XBaseMsg) {
@@ -93,19 +99,27 @@ export class WebsocketClientService {
 
   /**
    * Maybe this will work in future Typescript
-   * For now, if reponse is of type VoidResponse (so there is no reponse),
+   * For now, if response is of type VoidResponse (so there is no reponse),
    * caller should not pass any listener.
    */
   call
     <T extends XRequest<K>, K extends XResponse>
-    (req: T, listener?: (response: K) => any): any {
-    this.send(req); // send request through websocket
+  (
+    req: T, 
+    onResponseListener?: (response: K) => any,
+    onSentListener?: () => any,
+  ): void {
+    // send request through websocket
+    this.send(req); 
+    // callback called right after sending
+    if ( onSentListener !== undefined ) {
+      onSentListener();
+    }
     // subscribe on queue for response with the same msg id as req.id
     // if ( K instanceof VoidResponse ) { return; }
-    if (listener !== undefined) {
-      this.rpcBus.on(req.id.toString(), listener);
+    if ( onResponseListener !== undefined ) {
+      this.rpcBus.on(req.id.toString(), onResponseListener);
     }
-    return undefined;
   }
 
 }

@@ -17,6 +17,7 @@ import { Room } from '../common/protocol/dto/room';
 import { Player } from '../common/protocol/dto/player';
 import { GetRoomDetails, RoomDetailsResp } from '../common/protocol/get_room';
 
+
 /**
  * 
  */
@@ -27,6 +28,7 @@ class UserEntity {
         public password: string) {
     }
 }
+
 
 /**
  * 
@@ -61,6 +63,7 @@ class UserDatabase {
 
 } let userDatabase = new UserDatabase();
 
+
 /**
  * 
  */
@@ -75,12 +78,16 @@ class Peer {
     // send msg to this peer
     send(msg: XBaseMsg) {
         // this.ws.send( JSON.stringify(msg) );
-        this.ws.send(msgpack.encode(msg));
         console.log( msg );
+        try{ 
+            this.ws.send(msgpack.encode(msg));
+        }catch( ex ){ console.log(ex); }
     }
     // don't encode, useful for broadcasts (msg is encoded once and as such broadcasted)
     justSend(msg: Buffer) {
-        this.ws.send(msg);
+        try{
+            this.ws.send(msg);
+        }catch( ex ){ console.log(ex); }
     }
     join(room: ServerRoom) {
         this.rooms.push(room);
@@ -109,6 +116,7 @@ class ServerRoom {
     }
     broadcast(sender: Peer, msg: XBaseMsg, excludeSender: boolean) {
         const m = msgpack.encode(msg);
+        console.log( `broadcasting ${JSON.stringify(msg)} to ${this.peers.length} peers` );
         // TODO: ugly
         if (excludeSender === false) {
             this.peers.forEach(peer => peer.justSend(m));
@@ -120,10 +128,10 @@ class ServerRoom {
         this.peers.push(peer);
         this.broadcast(
             peer,
-            new PeerJoinedTheRoomMsg(peer.user.id, `Guest ${peer.user.id}`, this.id),
+            new PeerJoinedTheRoomMsg( peer.user.id, peer.user.username, this.id),
             true
         );
-        peer.send(new ServerMsg(`You have joined room ${this.roomname}`));
+        // peer.send(new ServerMsg(`You have joined room ${this.roomname}`));
     }
     leave(peer: Peer) {
         this.broadcast(
@@ -141,18 +149,25 @@ class ServerRoom {
  */
 class GameServer {
     rooms: Map<number, ServerRoom>;
+    allPeers: Peer[];
 
     constructor() {
         this.rooms = new Map();
+        this.allPeers = [];
     }
     rageQuit(peer: Peer) {
+        // here we assume peer can be in many rooms ( like in chat )
         this.rooms.forEach((room) => room.leave(peer));
+        this.allPeers = this.allPeers.filter( p => p.user.id !== peer.user.id );
+    }
+    addPeer( peer: Peer ){
+        this.allPeers.push( peer );
     }
     route(sender: Peer, message: Buffer) {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
         let baseMsg = msgpack.decode( message ) as XRequest<any>;
-        console.log( `Request: ${baseMsg}` );
+        console.log( `Request: ${JSON.stringify(baseMsg)}` );
         // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
@@ -168,14 +183,18 @@ class GameServer {
             } break;
             case MSG_TYPE.JOIN_ROOM: {
                 let request = baseMsg as JoinRoomMsg;
-                this.runCallbackWithGuard(sender, request.roomid,
+                this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => room.join(sender)
                 );
             } break;
             case MSG_TYPE.LEAVE_THE_ROOM: {
                 let request = baseMsg as LeaveTheRoomMsg;
-                this.runCallbackWithGuard(sender, request.roomid,
-                    (room: ServerRoom) => room.broadcast(sender, new PeerLeftTheRoomMsg(sender.user.id, room.id), true)
+                this.runCallbackWithGuard( sender, request.roomid,
+                    (room: ServerRoom) => room.broadcast(
+                        sender, 
+                        new PeerLeftTheRoomMsg(sender.user.id, room.id), 
+                        true
+                    )
                 );
             } break;
             case MSG_TYPE.CREATE_ROOM: {
@@ -190,11 +209,9 @@ class GameServer {
                 this.rooms.set(newRoom.id, newRoom);
                 sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
                 // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
-                this.rooms.forEach(r => r.broadcast(
-                    sender,
-                    new RoomHasBeenCreated(new Room(request.roomname, 1, newRoom.id)),
-                    true
-                ));
+                this.allPeers.forEach( p => p.send( 
+                    new RoomHasBeenCreated( new Room( request.roomname, 1, newRoom.id))
+                ) );
             } break;
             case MSG_TYPE.SIGNIN: {
                 let request = baseMsg as SignInReq;
@@ -214,7 +231,6 @@ class GameServer {
             } break;
             case MSG_TYPE.ADD: {
                 let request = baseMsg as AddTwoNumbers;
-                console.log(`${request.a} + ${request.b}`);
                 sender.send(new AddResult(request));
             } break;
             case MSG_TYPE.GET_ROOM_LIST: {
@@ -278,6 +294,7 @@ wss.on('connection', (ws: WebSocket) => {
     // this works like closure- peer will be remembered
     let guestId = (- 1 - Math.floor(Math.random() * 100_000));
     let peer = new Peer(new UserEntity(guestId, "", ""), ws);
+    myServer.addPeer( peer );
     ws.on('message', (message: Buffer) => myServer.route(peer, message));
     ws.on('close', () => myServer.rageQuit(peer));
 });

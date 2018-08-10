@@ -1,5 +1,5 @@
 <div style="background-color: #cccccc; padding: 10px; margin: 30px" >
-  <h2>{{title}}</h2>
+  <h2>{{title}} / {{authService.username}}</h2>
   <h3>websocket state: {{connState}}</h3>
   <button (click)="onConnectButtonClick()" >connect</button>
   <button (click)="onDisconnectButtonClick()" >disconnect</button>
@@ -9,8 +9,7 @@
     <a routerLink="">Main</a>
     <a routerLink="/signin">sign in</a>
     <a routerLink="/roomlist">rooms' list</a>
-    <a routerLink="/createroom">create room</a>
-    <a routerLink="/gameplay">gameplay</a>
+    <!-- <a routerLink="/gameplay">gameplay</a> -->
   </nav>
   <div style="border: 2px solid black; background-color: #eeeeee" >
     <router-outlet></router-outlet>

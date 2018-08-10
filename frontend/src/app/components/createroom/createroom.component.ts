@@ -44,7 +44,9 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     private wss: WebsocketClientService,
     private route: ActivatedRoute,
     private router: Router
-  ) { }
+  ) {
+    this.players = [];
+  }
 
   ngOnInit(): void {
     this.sub = this.route.params.subscribe(params => {
@@ -56,14 +58,21 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
           this.players = resp.players;
         }
       );
-      this.wss.subscribeOnMessage<PeerJoinedTheRoomMsg>( (msg: PeerJoinedTheRoomMsg) => {
-        console.log( `adding player ${msg.peername} ${msg.peerid}` );
-        this.players.push( new Player(msg.peerid, msg.peername) );
-      } );
-      this.wss.subscribeOnMessage<PeerLeftTheRoomMsg>( (msg: PeerLeftTheRoomMsg) => {
-        console.log( `removing player ${msg.peerid}` );
-        this.players = this.players.filter( p => p.id !== msg.peerid );
-      } );
+      // TODO: implement unsubscribe
+      this.wss.subscribeOnMessage( 
+        `_${new PeerJoinedTheRoomMsg(null,null,null).event_type}`,  // TODO: this sucks
+        (msg: PeerJoinedTheRoomMsg) => {
+          console.log( msg );
+          this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
+        }
+      );
+      this.wss.subscribeOnMessage( 
+        `x${new PeerLeftTheRoomMsg(null,null).event_type}`,  // TODO: this sucks
+        (msg: PeerLeftTheRoomMsg) => {
+          console.log( msg );
+          this.players = this.players.filter( p => p.id !== msg.peerid );
+        }
+      );
     });
   }
 

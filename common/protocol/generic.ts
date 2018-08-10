@@ -1,4 +1,4 @@
-import { MSG_TYPE, Result } from "./msg_types";
+import { MSG_TYPE, Result, EVENT_TYPE } from "./msg_types";
 
 // just to mark classes
 // export interface PeerToServer { }
@@ -60,8 +60,8 @@ export abstract class XResponse extends XBaseMsg{
  * Event has only type
  */
 export abstract class XEvent extends XBaseMsg{
-    constructor( type: MSG_TYPE ){
-        super( type );
+    constructor( public event_type: EVENT_TYPE ){
+        super( MSG_TYPE.EVENT );
     }
 }
 

@@ -1,5 +1,5 @@
 import { XRequest, XBaseMsg, VoidResponse, XEvent, XResponse } from "./generic";
-import { MSG_TYPE, Result } from "./msg_types";
+import { MSG_TYPE, Result, EVENT_TYPE } from "./msg_types";
 import { Room } from "./dto/room";
 
 export class CreateRoomMsg extends XRequest<RoomCreatedResp> {
@@ -23,6 +23,6 @@ export class RoomCreatedResp extends XResponse{
 
 export class RoomHasBeenCreated extends XEvent {
     constructor( public room: Room ){
-        super( MSG_TYPE.ROOM_HAS_BEEN_CREATED );
+        super( EVENT_TYPE.ROOM_HAS_BEEN_CREATED );
     }
 }

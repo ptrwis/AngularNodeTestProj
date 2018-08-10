@@ -6,6 +6,7 @@ import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/c
 import { Result } from '../../../../../common/protocol/msg_types';
 import { Room } from '../../../../../common/protocol/dto/room';
 import { AuthService } from '../../services/auth.service';
+import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
 import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
 
 @Component({
@@ -53,13 +54,22 @@ export class RoomlistComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
+    this.wss.subscribeOnMessage(
+      `x${new RoomHasBeenCreated(null).event_type}`,  // TODO: this sucks
+      (msg: RoomHasBeenCreated) => {
+        console.log( msg );
+        this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ];
+      }
+    );
   }
 
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
-    // TODO: introduce 'onSendListener'
-    this.wss.call( new JoinRoomMsg(this.selectedRoom.id) );
-    this.router.navigate( ['./createroom', +event.data.id] );
+    this.wss.call( 
+      new JoinRoomMsg( this.selectedRoom.id ), 
+      undefined, // no reponse - no handler
+      () => this.router.navigate( ['./createroom', +event.data.id] ) // call after sending
+    );
   }
 
   onRefreshButtonClick() {

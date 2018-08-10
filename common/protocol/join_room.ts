@@ -1,4 +1,4 @@
-import { MSG_TYPE } from "./msg_types";
+import { MSG_TYPE, EVENT_TYPE } from "./msg_types";
 import { XRequest, XEvent, VoidResponse } from "./generic";
 
 export class JoinRoomMsg extends XRequest<VoidResponse> {
@@ -16,7 +16,7 @@ export class PeerJoinedTheRoomMsg extends XEvent {
     constructor( peerid: number,
                  peername: string,
                  roomid: number) {
-        super(MSG_TYPE.PEER_JOINED_THE_ROOM);
+        super( EVENT_TYPE.PEER_JOINED_THE_ROOM );
         this.peerid = peerid;
         this.peername = peername;
         this.roomid = roomid;
