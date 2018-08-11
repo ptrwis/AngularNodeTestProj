@@ -59,15 +59,15 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
         }
       );
       // TODO: implement unsubscribe
-      this.wss.subscribeOnMessage( 
-        `_${new PeerJoinedTheRoomMsg(null,null,null).event_type}`,  // TODO: this sucks
+      this.wss.subscribeOnMessage(
+        WebsocketClientService.prefixEvent( new PeerJoinedTheRoomMsg(null, null, null) ),
         (msg: PeerJoinedTheRoomMsg) => {
           console.log( msg );
-          this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
+          this.players = [ new Player(msg.peerid, msg.peername), ... this.players ];
         }
       );
-      this.wss.subscribeOnMessage( 
-        `x${new PeerLeftTheRoomMsg(null,null).event_type}`,  // TODO: this sucks
+      this.wss.subscribeOnMessage(
+        WebsocketClientService.prefixEvent( new PeerLeftTheRoomMsg(null, null) ),
         (msg: PeerLeftTheRoomMsg) => {
           console.log( msg );
           this.players = this.players.filter( p => p.id !== msg.peerid );

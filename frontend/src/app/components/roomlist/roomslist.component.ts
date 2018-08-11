@@ -15,10 +15,10 @@ import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
   <h3>list of rooms awaiting for players to start</h3>
   <button (click)="onRefreshButtonClick()" >Refresh</button>
   <button (click)="onCreateRoomButtonClick()">Create Room</button>
-  <p-table [value]="rooms" 
-           selectionMode="single" 
-           [(selection)]="selectedRoom" 
-           (onRowSelect)="onRowSelect($event)" 
+  <p-table [value]="rooms"
+           selectionMode="single"
+           [(selection)]="selectedRoom"
+           (onRowSelect)="onRowSelect($event)"
            dataKey="id" >
     <ng-template pTemplate="header">
         <tr>
@@ -55,9 +55,9 @@ export class RoomlistComponent implements OnInit {
   ngOnInit(): void {
     this.refresh();
     this.wss.subscribeOnMessage(
-      `x${new RoomHasBeenCreated(null).event_type}`,  // TODO: this sucks
+      WebsocketClientService.prefixEvent( new RoomHasBeenCreated(null) ),
       (msg: RoomHasBeenCreated) => {
-        console.log( msg );
+        // console.log( msg );
         this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ];
       }
     );
@@ -65,8 +65,8 @@ export class RoomlistComponent implements OnInit {
 
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
-    this.wss.call( 
-      new JoinRoomMsg( this.selectedRoom.id ), 
+    this.wss.call(
+      new JoinRoomMsg( this.selectedRoom.id ),
       undefined, // no reponse - no handler
       () => this.router.navigate( ['./createroom', +event.data.id] ) // call after sending
     );

@@ -24,31 +24,16 @@ export class SignInComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    console.log('ngOnInit');
   }
 
   ngOnDestroy(): void {
-    console.log('ngOnDestroy');
   }
 
   /**
    * TODO: "onSignInButtonClick"
-   * @param event 
+   * @param event
    */
-  handleSignIn(event: MouseEvent) {
-    if (this.wss.isConnected()) {
-      this.signIn();
-    } else {
-      // after connecting ...
-      this.wss.registerOnOpenListener(
-        // ... try to sign in ...
-        () => this.signIn() );
-      // ok, now  connect and start above process
-      this.wss.connect();
-    }
-  }
-
-  signIn() {
+  handleSignIn(event: MouseEvent) { 
     this.authService.login(this.username, this.password,
       // ... after getting response (signing in went ok or not) route or show error
       (resp) => {
@@ -56,7 +41,8 @@ export class SignInComponent implements OnInit, OnDestroy {
           case Result.RESULT_OK: this.router.navigate(['./roomlist']); break;
           case Result.RESULT_FAIL: alert('Login failed! :C'); break;
         }
-      });
+      }
+    );
   }
 
   handleSignOut(event: MouseEvent) {

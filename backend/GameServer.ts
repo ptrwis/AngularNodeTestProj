@@ -8,7 +8,7 @@ import { XBaseMsg, XRequest } from '../common/protocol/generic';
 import { PeerJoinedTheRoomMsg, JoinRoomMsg } from '../common/protocol/join_room';
 import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../common/protocol/leave_room';
 import { ChatEvent, ChatMsg } from '../common/protocol/chat';
-import { ServerMsg } from '../common/protocol/server_msg';
+// import { ServerMsg } from '../common/protocol/server_msg';
 import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/protocol/create_room';
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
@@ -78,16 +78,13 @@ class Peer {
     // send msg to this peer
     send(msg: XBaseMsg) {
         // this.ws.send( JSON.stringify(msg) );
-        console.log( msg );
-        try{ 
+        if( this.ws.readyState === WebSocket.OPEN )
             this.ws.send(msgpack.encode(msg));
-        }catch( ex ){ console.log(ex); }
     }
     // don't encode, useful for broadcasts (msg is encoded once and as such broadcasted)
     justSend(msg: Buffer) {
-        try{
+        if( this.ws.readyState === WebSocket.OPEN )
             this.ws.send(msg);
-        }catch( ex ){ console.log(ex); }
     }
     join(room: ServerRoom) {
         this.rooms.push(room);
@@ -116,16 +113,12 @@ class ServerRoom {
     }
     broadcast(sender: Peer, msg: XBaseMsg, excludeSender: boolean) {
         const m = msgpack.encode(msg);
-        console.log( `broadcasting ${JSON.stringify(msg)} to ${this.peers.length} peers` );
-        // TODO: ugly
-        if (excludeSender === false) {
-            this.peers.forEach(peer => peer.justSend(m));
-        } else {
-            this.peers.forEach(peer => peer.user.id === sender.user.id ? peer.justSend(m) : null);
-        }
+        let receivingList = excludeSender === false ? this.peers : this.peers.filter((p) => p.user.id !== sender.user.id);
+        receivingList.forEach(peer => peer.justSend(m));
     }
     join(peer: Peer) {
         this.peers.push(peer);
+        console.log( `${peer.user.username} joined room ${this.roomname}, we have now ${this.peers.length} peers in this room` );
         this.broadcast(
             peer,
             new PeerJoinedTheRoomMsg( peer.user.id, peer.user.username, this.id),
@@ -155,19 +148,42 @@ class GameServer {
         this.rooms = new Map();
         this.allPeers = [];
     }
+    /**
+     * broadcast to this.allPeers
+     * @param sender 
+     * @param msg 
+     * @param excludeSender 
+     */
+    broadcast(sender: Peer, msg: XBaseMsg, excludeSender: boolean) {
+        const m = msgpack.encode(msg);
+        let receivingList = excludeSender === false ? this.allPeers : this.allPeers.filter((p) => p.user.id !== sender.user.id);
+        receivingList.forEach(peer => peer.justSend(m));
+    }
+    /**
+     * called after websocket disconnection
+     * @param peer 
+     */
     rageQuit(peer: Peer) {
         // here we assume peer can be in many rooms ( like in chat )
-        this.rooms.forEach((room) => room.leave(peer));
+        this.rooms.forEach((room) => room.leave(peer)); // for games it sucks
         this.allPeers = this.allPeers.filter( p => p.user.id !== peer.user.id );
     }
+    /**
+     * 
+     * @param peer 
+     */
     addPeer( peer: Peer ){
         this.allPeers.push( peer );
     }
+    /**
+     * 
+     * @param sender 
+     * @param message 
+     */
     route(sender: Peer, message: Buffer) {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
         let baseMsg = msgpack.decode( message ) as XRequest<any>;
-        console.log( `Request: ${JSON.stringify(baseMsg)}` );
         // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
@@ -183,22 +199,30 @@ class GameServer {
             } break;
             case MSG_TYPE.JOIN_ROOM: {
                 let request = baseMsg as JoinRoomMsg;
+                console.log( request );
                 this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => room.join(sender)
                 );
             } break;
             case MSG_TYPE.LEAVE_THE_ROOM: {
                 let request = baseMsg as LeaveTheRoomMsg;
+                // console.log( request );
                 this.runCallbackWithGuard( sender, request.roomid,
-                    (room: ServerRoom) => room.broadcast(
-                        sender, 
-                        new PeerLeftTheRoomMsg(sender.user.id, room.id), 
-                        true
-                    )
+                    (room: ServerRoom) => {
+                        // TODO: if owner left choose new one from other peers in this room.
+                        // If this one was last, remove the room.
+                        room.leave( sender ); 
+                        room.broadcast(
+                            sender, 
+                            new PeerLeftTheRoomMsg(sender.user.id, room.id), 
+                            true
+                        );
+                    }
                 );
             } break;
             case MSG_TYPE.CREATE_ROOM: {
                 let request = baseMsg as CreateRoomMsg;
+                // console.log( request );
                 // todo; check if not exists
                 let found = false;
                 /* if (found == true) {
@@ -206,14 +230,18 @@ class GameServer {
                     return;
                 } */
                 let newRoom = new ServerRoom(request.roomname);
-                this.rooms.set(newRoom.id, newRoom);
+                this.rooms.set(newRoom.id, newRoom); // weak- ugly
                 sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
+                newRoom.join( sender );
                 // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
-                this.allPeers.forEach( p => p.send( 
-                    new RoomHasBeenCreated( new Room( request.roomname, 1, newRoom.id))
-                ) );
+                this.broadcast(
+                    sender,
+                    new RoomHasBeenCreated( new Room( request.roomname, 1, newRoom.id)),
+                    false
+                );
             } break;
             case MSG_TYPE.SIGNIN: {
+                // TODO: we can broadcast this message to this.allPeers, it would be funny to see it on the bar who just came in
                 let request = baseMsg as SignInReq;
                 let usr = userDatabase.findByCredentials(request.username, request.password);
                 if (usr === undefined) {
@@ -274,7 +302,7 @@ class GameServer {
     runCallbackWithGuard(sender: Peer, roomid: number, callback: (room: ServerRoom) => void) {
         let room = this.rooms.get(roomid);
         if (room === undefined) {
-            sender.send(new ServerMsg(`Server: Such room does not exists!`));
+            // sender.send(new ServerMsg(`Server: Such room does not exists!`));
         } else {
             callback(room);
         }

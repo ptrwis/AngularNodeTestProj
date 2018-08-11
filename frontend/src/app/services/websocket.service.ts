@@ -21,12 +21,19 @@ export class WebsocketClientService {
   onOpenListeners: ((readyState: number) => void)[];
   onCloseListeners: ((readyState: number) => void)[];
 
+  /**
+   * // TODO: this sucks
+   * @param ev
+   */
+  static prefixEvent( ev: XEvent ) {
+    return `_${ev.event_type}`;
+  }
+
   constructor() {
     this.wsurl = 'ws://localhost:8999';
     this.ws = undefined;
     this.onOpenListeners = [];
     this.onCloseListeners = [];
-    console.log('WebsocketClientService constructor');
   }
 
   connect() {
@@ -40,16 +47,17 @@ export class WebsocketClientService {
       // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
       const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XBaseMsg; // MsgPack
       // const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XEvent;
-      console.log( baseMsg );
       switch ( baseMsg.type ) {
         case MSG_TYPE.RESPONSE:
           const response = baseMsg as XResponse;
+          console.log( response );
           this.rpcBus.emit( response.id.toString(), baseMsg);
           break;
         // EVENTS:
         case MSG_TYPE.EVENT:
           const event = baseMsg as XEvent;
-          const key = `x${event.event_type}`;
+          console.log( event );
+          const key = WebsocketClientService.prefixEvent( event );
           this.rpcBus.emit( key , event);
           break;
       }
@@ -73,7 +81,7 @@ export class WebsocketClientService {
 
   /**
    * Lifecycle listeners
-   * @param onOpenListener 
+   * @param onOpenListener
    */
   registerOnOpenListener(onOpenListener: (readyState: number) => void) {
     this.onOpenListeners.push( onOpenListener );
@@ -85,7 +93,7 @@ export class WebsocketClientService {
   /**
    * subscription to particular event
    * typename must correspond to  T
-   * @param listener 
+   * @param listener
    */
   subscribeOnMessage<T extends XEvent>( typename: string,  listener: ( event: T ) => void ) {
     this.rpcBus.on( typename, listener);
@@ -105,12 +113,12 @@ export class WebsocketClientService {
   call
     <T extends XRequest<K>, K extends XResponse>
   (
-    req: T, 
+    req: T,
     onResponseListener?: (response: K) => any,
     onSentListener?: () => any,
   ): void {
     // send request through websocket
-    this.send(req); 
+    this.send(req);
     // callback called right after sending
     if ( onSentListener !== undefined ) {
       onSentListener();

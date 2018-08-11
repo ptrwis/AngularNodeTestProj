@@ -28,14 +28,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
-  }
-
-  onConnectButtonClick() {
     this.wss.connect();
-  }
-
-  onDisconnectButtonClick() {
-    this.wss.disconnect();
   }
 
   on_makeRpcRequest_BtnClick() {
