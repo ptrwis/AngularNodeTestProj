@@ -15,6 +15,7 @@ import { Player } from '../../../../../common/protocol/dto/player';
   <button (click)="onSaveRoomnameButtonClick()" >save</button>
   <br />
   <button (click)="onStartGameButtonClick()" >Start</button>
+  <button (click)="onLeaveRoomButtonClick()" >Leave</button>
 
   <p-table [value]="players">
       <ng-template pTemplate="header">
@@ -31,6 +32,16 @@ import { Player } from '../../../../../common/protocol/dto/player';
       </ng-template>
   </p-table>
 
+  <!-- albo listbox -->
+  <p-table [value]="chatMsgs">
+      <ng-template pTemplate="body" let-entry>
+          <tr>
+              <td>{{entry}}</td>
+          </tr>
+      </ng-template>
+  </p-table>
+  <input type="text" pInputText [(ngModel)]="chatInput" />
+  <p-button label="Send" (onClick)="sendChatMsg($event)" ></p-button>
   `,
 })
 export class CreateRoomComponent implements OnInit, OnDestroy {
@@ -38,6 +49,8 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   roomid: number;
   roomname: string;
   players: Player[];
+  chatMsgs: string[];
+  chatInput: string;
   private sub: any; // subscription to route's parameters change
 
   constructor(
@@ -46,6 +59,8 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     private router: Router
   ) {
     this.players = [];
+    this.chatMsgs = [ 'John: Hi!', 'Billy: hello :)' ];
+    this.chatInput = '';
   }
 
   ngOnInit(): void {
@@ -93,6 +108,18 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
 
   onSaveRoomnameButtonClick() {
     alert('Not implmeneted yet ;)');
+  }
+
+  sendChatMsg() {
+    this.chatMsgs = [ this.chatInput, ...this.chatMsgs ];
+    this.chatInput = '';
+  }
+
+  /**
+   * This will trigger ngOnDestroy
+   */
+  onLeaveRoomButtonClick( ) {
+    this.router.navigate( ['./roomlist'] );
   }
 
 }

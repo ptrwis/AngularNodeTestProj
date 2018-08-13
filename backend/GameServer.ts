@@ -209,9 +209,12 @@ class GameServer {
                 // console.log( request );
                 this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => {
-                        // TODO: if owner left choose new one from other peers in this room.
-                        // If this one was last, remove the room.
+                        // TODO: if owner left then choose new one from other peers in this room.
                         room.leave( sender ); 
+                        if( room.peers.length === 0 ) {
+                            this.rooms.delete( room.id );
+                            return;
+                        }
                         room.broadcast(
                             sender, 
                             new PeerLeftTheRoomMsg(sender.user.id, room.id), 
