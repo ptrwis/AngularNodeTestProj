@@ -1,6 +1,6 @@
-import { AddTwoNumbers, AddResult } from './../../../../../common/protocol/addition';
+import { AddTwoNumbers, AddResult } from '../../../../../common/protocol/addition';
 import { Component, OnInit } from '@angular/core';
-import { WebsocketClientService } from './../../services/websocket.service';
+import { WebsocketClientService } from '../../services/websocket.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 

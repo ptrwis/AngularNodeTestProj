@@ -1,4 +1,4 @@
-import { LocalGame } from './../../../../../common/game/game';
+import { LocalGame } from '../../../../../common/game/game';
 /**
  * Draw game using HTML Canvas
  */

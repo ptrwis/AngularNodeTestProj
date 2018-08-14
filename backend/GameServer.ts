@@ -192,8 +192,8 @@ class GameServer {
                 this.runCallbackWithGuard(sender, chatMsg.roomid,
                     (room: ServerRoom) => room.broadcast(
                         sender,
-                        new ChatEvent(sender.user.id, `${sender.user.id}: ${message}`, room.id),
-                        true
+                        new ChatEvent(sender.user.id, `${sender.user.username}: ${chatMsg.msg}`, room.id),
+                        false // re-send message to sender
                     )
                 );
             } break;

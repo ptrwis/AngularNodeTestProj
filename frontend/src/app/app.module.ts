@@ -13,6 +13,7 @@ import { AppComponent } from './components/app/app.component';
 import { RoomlistComponent } from './components/roomlist/roomslist.component';
 import { GamePlayComponent } from './components/gameplay/gameplay.component';
 import { CreateRoomComponent } from './components/createroom/createroom.component';
+import { SettingsComponent } from './components/settings/settings.component';
 import { AppRoutingModule } from './app-routing.module';
 import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
@@ -28,6 +29,7 @@ import { AuthService } from './services/auth.service';
     GamePlayComponent,
     RoomlistComponent,
     SignInComponent,
+    SettingsComponent,
     OwlComponent
   ],
   imports: [

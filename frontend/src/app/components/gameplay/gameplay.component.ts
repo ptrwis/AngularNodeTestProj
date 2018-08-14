@@ -1,29 +1,47 @@
-import { Vec2d } from './../../../../../common/game/vec2d';
-import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef } from '@angular/core';
+import { Vec2d } from '../../../../../common/game/vec2d';
+import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { WebsocketClientService } from '../../services/websocket.service';
+import { LeaveTheRoomMsg } from '../../../../../common/protocol/leave_room';
 
 @Component({
   selector: 'gameplay',
   template:
-  `<h3>GamePlay</h3>
+  `<h3>GamePlay {{roomid}}</h3>
   <h4>Click on the owls to make them flying!</h4>
   <input type="radio" name="dir" [value]='-1' (click)='onRadioChange(-1)' checked>
   clockwise <br />
   <input type="radio" name="dir" [value]='+1' (click)='onRadioChange(+1)'>
   counter-clockwise <br/>
   <canvas #kanvas ></canvas>
-  <owl posx="100" posy="500"
+  <owl posx="70" posy="500"
        factorx="1.0" factory="0.5"
        rounds="2" ></owl>
-  <owl posx="300" posy="500"
+  <owl posx="140" posy="500"
        factorx="2.0" factory="0.5"
-       rounds="4" ></owl>`,
+       rounds="4" ></owl>
+  <owl posx="210" posy="500"
+       factorx="0.5" factory="1.0"
+       rounds="4" ></owl>
+  <owl posx="280" posy="500"
+       factorx="0.5" factory="2.0"
+       rounds="4" ></owl>
+  <owl posx="350" posy="500"
+       factorx="1.0" factory="1.0"
+       rounds="4" ></owl>
+  <br /> <br /> <br /> <br />
+  <button (click)="onLeaveRoomButtonClick()" >Leave</button>`,
   styles: [`canvas { border: 1px solid black; }`]
 })
-export class GamePlayComponent implements AfterViewInit {
+export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
+
+  roomid: number;
+  private sub: any; // subscription to route's parameters change
 
   constructor(
+    private wss: WebsocketClientService,
     private router: Router,
+    private route: ActivatedRoute,
   ) { }
 
   @ViewChild('kanvas') canvasRef: ElementRef;
@@ -33,6 +51,12 @@ export class GamePlayComponent implements AfterViewInit {
   @Input() public height = 240;
   private angle: number;
   private rotDir: number;
+
+  public ngOnInit() {
+    this.sub = this.route.params.subscribe(params => {
+      this.roomid = +params['id']; // (+) converts string 'id' to a number
+    });
+  }
 
   public ngAfterViewInit() {
     this.rotDir = -1;
@@ -71,6 +95,12 @@ export class GamePlayComponent implements AfterViewInit {
     requestAnimationFrame(this.drawOnCanvas.bind(this));
   }
 
+  ngOnDestroy() {
+    // subscription is in ngOnInit
+    this.sub.unsubscribe();
+    this.wss.call( new LeaveTheRoomMsg(this.roomid) );
+  }
+
   /**
    * dont know how to run it yet
    */
@@ -93,6 +123,13 @@ export class GamePlayComponent implements AfterViewInit {
 
   private onRadioChange(dir: number) {
     this.rotDir = dir;
+  }
+
+  /**
+   * This will trigger ngOnDestroy
+   */
+  onLeaveRoomButtonClick( ) {
+    this.router.navigate( ['./roomlist'] );
   }
 
 }
