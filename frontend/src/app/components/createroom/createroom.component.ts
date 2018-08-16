@@ -6,6 +6,9 @@ import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../../../../../common/proto
 import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
 import { Player } from '../../../../../common/protocol/dto/player';
+import { EVENT_TYPE } from '../../../../../common/protocol/msg_types';
+import { EventHandler } from '../../services/eventhandler.service';
+import { RemoteProcCall } from '../../services/remoteproccall.service';
 
 @Component({
   selector: 'createroom',
@@ -39,46 +42,54 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
 
   roomid: number;
   roomname: string;
-  private sub: any; // subscription to route's parameters change
+  private routeParamsSub: any; // subscription to route's parameters change
 
-  private dontSignalLeavingTheRoom: boolean;
   private players: Player[];
   private chatMsgs: string[];
   private chatInput: string;
 
+  private dontSignalLeavingTheRoomInNgOnDestroy: boolean;
+
+  /**
+   * Subscriptions to events/messages sent to client from server, related to this view.
+   * Saving those subscriptions allows us to unsubscribe from them on abandoning this room
+  */
+  private peerJoinedTheRoomMsgSub: number;
+  private peerLeftTheRoomSub: number;
+  private chatEventSub: number;
+
   constructor(
-    private wss: WebsocketClientService,
+    // private wss: WebsocketClientService,
+    private rpc: RemoteProcCall,
+    private eventHandler: EventHandler,
     private route: ActivatedRoute,
     private router: Router
   ) {
-    this.dontSignalLeavingTheRoom = false;
+    this.dontSignalLeavingTheRoomInNgOnDestroy = false;
     this.players = [];
     this.chatMsgs = [];
     this.chatInput = '';
   }
 
   ngOnInit(): void {
-    this.sub = this.route.params.subscribe(params => {
+    this.routeParamsSub = this.route.params.subscribe(params => {
       this.roomid = +params['id']; // (+) converts string 'id' to a number
-      this.wss.call(
+      this.rpc.call(
         new GetRoomDetails(this.roomid),
         (resp: RoomDetailsResp) => {
           this.roomname = resp.room.name;
           this.players = resp.players;
         }
       );
-      // TODO: implement unsubscribe
-      // TODO: the way of making a key sucks hardly
-      this.wss.subscribeOnMessage(
-        WebsocketClientService.prefixEvent( new PeerJoinedTheRoomMsg(null, null, null) ),
+      // new PeerJoinedTheRoomMsg(null, null, null).key() // key built on top of event_type
+      this.peerJoinedTheRoomMsgSub = this.eventHandler.subscribeOnMessage(
+        EVENT_TYPE.PEER_JOINED_THE_ROOM,
         (msg: PeerJoinedTheRoomMsg) => this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
       );
-      this.wss.subscribeOnMessage(
-        WebsocketClientService.prefixEvent( new PeerLeftTheRoomMsg(null, null) ),
+      this.peerLeftTheRoomSub = this.eventHandler.subscribeOnMessage(
         (msg: PeerLeftTheRoomMsg) => this.players = this.players.filter( p => p.id !== msg.peerid )
       );
-      this.wss.subscribeOnMessage(
-        WebsocketClientService.prefixEvent( new ChatEvent(null, null, null) ),
+      this.chatEventSub = this.eventHandler.subscribeOnMessage(
         (msg: ChatEvent) => this.chatMsgs = [ msg.msg, ...this.chatMsgs ]
       );
     });
@@ -90,16 +101,21 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
    *  maybe better to use this.route.params.subscribe
    */
   ngOnDestroy() {
-    // subscription is in ngOnInit
-    this.sub.unsubscribe();
+    // ( subscription is in ngOnInit )
+    this.routeParamsSub.unsubscribe();
+    // unsubscribe from 'bussiness-logic' events
+    this.eventHandler.unsubscribeFromMessage( this.peerJoinedTheRoomMsgSub );
+    this.eventHandler.unsubscribeFromMessage( this.peerLeftTheRoomSub );
+    this.eventHandler.unsubscribeFromMessage( this.chatEventSub );
     // look at this.onStartGameButtonClick()
-    if ( this.dontSignalLeavingTheRoom !== true ) {
-      this.wss.call( new LeaveTheRoomMsg(this.roomid) );
+    if ( this.dontSignalLeavingTheRoomInNgOnDestroy !== true ) {
+      this.rpc.call( new LeaveTheRoomMsg( this.roomid ) );
     }
   }
 
   onStartGameButtonClick() {
-    this.dontSignalLeavingTheRoom = true;
+    // we are not leaving the room, dont broadcast such message while abandoning the view (ngOnDestroy)
+    this.dontSignalLeavingTheRoomInNgOnDestroy = true;
     this.router.navigate( ['./gameplay', this.roomid] );
   }
 
@@ -108,7 +124,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   }
 
   sendChatMsg() {
-    this.wss.call( new ChatMsg(this.chatInput, this.roomid) );
+    this.rpc.call( new ChatMsg( this.chatInput, this.roomid ) );
     this.chatInput = '';
   }
 

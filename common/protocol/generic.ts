@@ -57,7 +57,7 @@ export abstract class XResponse extends XBaseMsg{
 }
 
 /**
- * Event has only type
+ * Abstract event
  */
 export abstract class XEvent extends XBaseMsg{
     constructor( public event_type: EVENT_TYPE ){
@@ -67,7 +67,7 @@ export abstract class XEvent extends XBaseMsg{
 
 /**
  * Just a stub for requests without responses,
- * it is however caller's responsibility to not
+ * it is caller's responsibility to not
  * pass listener when there is no reponse
  */
 export class VoidResponse extends XResponse{
