@@ -3,6 +3,7 @@ import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestr
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketClientService } from '../../services/websocket.service';
 import { LeaveTheRoomMsg } from '../../../../../common/protocol/leave_room';
+import { RemoteProcCallService } from '../../services/remoteproccall.service';
 
 @Component({
   selector: 'gameplay',
@@ -39,7 +40,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   private sub: any; // subscription to route's parameters change
 
   constructor(
-    private wss: WebsocketClientService,
+    private rpc: RemoteProcCallService,
     private router: Router,
     private route: ActivatedRoute,
   ) { }
@@ -98,7 +99,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   ngOnDestroy() {
     // subscription is in ngOnInit
     this.sub.unsubscribe();
-    this.wss.call( new LeaveTheRoomMsg(this.roomid) );
+    this.rpc.call( new LeaveTheRoomMsg(this.roomid) );
   }
 
   /**

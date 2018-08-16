@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 * Handling messages on WebSocket level is implemented in WebsocketClientService
 */
 @Injectable()
-export class RemoteProcCall {
+export class RemoteProcCallService {
 
     private rpcBus: EventEmitter;
 
@@ -24,7 +24,7 @@ export class RemoteProcCall {
         <T extends XRequest<K>, K extends XResponse>
         (
             req: T,
-            onResponseListener?: (response: K) => any,
+            onResponseListener?: ( K ) => any,
             onSentListener?: () => any,
         ): void {
             // send request through websocket

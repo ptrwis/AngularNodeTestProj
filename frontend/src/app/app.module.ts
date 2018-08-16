@@ -19,8 +19,10 @@ import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
 
 import { WebsocketClientService } from './services/websocket.service';
+import { EventHandlerService } from './services/eventhandler.service';
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
+import { RemoteProcCallService } from './services/remoteproccall.service';
 
 @NgModule({
   declarations: [
@@ -45,6 +47,8 @@ import { AuthService } from './services/auth.service';
   ],
   providers: [
     WebsocketClientService,
+    RemoteProcCallService,
+    EventHandlerService,
     AuthGuard,
     AuthService
   ],

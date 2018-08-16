@@ -3,11 +3,13 @@ import { Router, NavigationExtras } from '@angular/router';
 import { WebsocketClientService } from '../../services/websocket.service';
 import { GetRoomList, RoomList } from '../../../../../common/protocol/get_room_list';
 import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
-import { Result } from '../../../../../common/protocol/msg_types';
+import { Result, EVENT_TYPE } from '../../../../../common/protocol/msg_types';
 import { Room } from '../../../../../common/protocol/dto/room';
 import { AuthService } from '../../services/auth.service';
 import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
 import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
+import { RemoteProcCallService } from '../../services/remoteproccall.service';
+import { EventHandlerService } from '../../services/eventhandler.service';
 
 @Component({
   selector: 'roomlist',
@@ -45,27 +47,30 @@ export class RoomlistComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private wss: WebsocketClientService,
+    private rpc: RemoteProcCallService,
+    private eh: EventHandlerService,
     private router: Router,
   ) {}
 
   refresh() {
-    this.wss.call( new GetRoomList(), (rl: RoomList) => this.rooms = rl.rooms );
+    this.rpc.call(
+      new GetRoomList(),
+      (rl: RoomList) => this.rooms = rl.rooms
+    );
   }
 
   ngOnInit(): void {
     this.refresh();
-    this.wss.subscribeOnMessage(
-      WebsocketClientService.prefixEvent( new RoomHasBeenCreated(null) ),
-      (msg: RoomHasBeenCreated) => {
-        // console.log( msg );
-        this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ];
-      }
+    this.eh.subscribeOnMessage(
+      EVENT_TYPE.ROOM_HAS_BEEN_CREATED,
+      (msg: RoomHasBeenCreated) => 
+        this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
     );
   }
 
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
-    this.wss.call(
+    this.rpc.call(
       new JoinRoomMsg( this.selectedRoom.id ),
       undefined, // no reponse - no handler
       () => this.router.navigate( ['./createroom', +event.data.id] ) // call after sending
@@ -77,7 +82,7 @@ export class RoomlistComponent implements OnInit {
   }
 
   onCreateRoomButtonClick() {
-    this.wss.call(
+    this.rpc.call(
       new CreateRoomMsg( `${this.authService.username}'s room` ), // TODO: + user_id / owner_id
       (resp: RoomCreatedResp) => {
         switch ( resp.result ) {

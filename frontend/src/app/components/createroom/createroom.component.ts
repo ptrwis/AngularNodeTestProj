@@ -1,14 +1,13 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { WebsocketClientService } from '../../services/websocket.service';
 import { GetRoomDetails, RoomDetailsResp } from '../../../../../common/protocol/get_room';
 import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../../../../../common/protocol/leave_room';
 import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
 import { Player } from '../../../../../common/protocol/dto/player';
 import { EVENT_TYPE } from '../../../../../common/protocol/msg_types';
-import { EventHandler } from '../../services/eventhandler.service';
-import { RemoteProcCall } from '../../services/remoteproccall.service';
+import { EventHandlerService, EventSubscription } from '../../services/eventhandler.service';
+import { RemoteProcCallService } from '../../services/remoteproccall.service';
 
 @Component({
   selector: 'createroom',
@@ -54,14 +53,14 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
    * Subscriptions to events/messages sent to client from server, related to this view.
    * Saving those subscriptions allows us to unsubscribe from them on abandoning this room
   */
-  private peerJoinedTheRoomMsgSub: number;
-  private peerLeftTheRoomSub: number;
-  private chatEventSub: number;
+  private peerJoinedTheRoomMsgSub: EventSubscription;
+  private peerLeftTheRoomSub: EventSubscription;
+  private chatEventSub: EventSubscription;
 
   constructor(
     // private wss: WebsocketClientService,
-    private rpc: RemoteProcCall,
-    private eventHandler: EventHandler,
+    private rpc: RemoteProcCallService,
+    private eventHandler: EventHandlerService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -81,15 +80,16 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
           this.players = resp.players;
         }
       );
-      // new PeerJoinedTheRoomMsg(null, null, null).key() // key built on top of event_type
       this.peerJoinedTheRoomMsgSub = this.eventHandler.subscribeOnMessage(
         EVENT_TYPE.PEER_JOINED_THE_ROOM,
         (msg: PeerJoinedTheRoomMsg) => this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
       );
       this.peerLeftTheRoomSub = this.eventHandler.subscribeOnMessage(
+        EVENT_TYPE.PEER_LEFT_THE_ROOM,
         (msg: PeerLeftTheRoomMsg) => this.players = this.players.filter( p => p.id !== msg.peerid )
       );
       this.chatEventSub = this.eventHandler.subscribeOnMessage(
+        EVENT_TYPE.CHAT_EVENT,
         (msg: ChatEvent) => this.chatMsgs = [ msg.msg, ...this.chatMsgs ]
       );
     });

@@ -30,21 +30,21 @@ export class EventSubscription {
 * eventHandler.unsubscribeFromMessage(sub1);
 */
 @Injectable()
-export class EventHandler {
+export class EventHandlerService {
 
     private eventBus: EventEmitter;
-    private subscribers: Map< number, ( event: XEvent ) => void >;
+    private subscribers: Map< number, ( XEvent ) => void >;
 
   /**
    * Subscription to particular event.
    * Clients' listeners are registered in this.subscribers and the key os EventSubscription.client_id (random int).
    * Listeners on EventEmmiter must be registered with string key, and it is EVENT_TYPE's string value
-   * typename must correspond to T
+   * TODO: if ever TypeScipt will stop suck, we should be able to drop first argument
    * @param listener
    */
   subscribeOnMessage<T extends XEvent>(
       event_type: EVENT_TYPE,
-      listener: ( event: T ) => void
+      listener: ( T ) => void
     ): EventSubscription {
         const sub = new EventSubscription( event_type );
         this.eventBus.on( sub.eventTypeStr(), listener);

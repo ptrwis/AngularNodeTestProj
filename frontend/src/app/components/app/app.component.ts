@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { WebsocketClientService } from '../../services/websocket.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { RemoteProcCallService } from '../../services/remoteproccall.service';
+import { EventHandlerService } from '../../services/eventhandler.service';
 
 @Component({
   selector: 'app-root',
@@ -17,7 +19,8 @@ export class AppComponent implements OnInit {
 
   constructor( private router: Router,
                private authService: AuthService,
-               private wss: WebsocketClientService) {
+               private wss: WebsocketClientService,
+               private rpc: RemoteProcCallService) {
     wss.registerOnOpenListener( (readyState) => this.connState = readyState.toString() );
     wss.registerOnCloseListener( () => {
       authService.logout(); // should it send info to server? where? ( client can sign out manually )
@@ -34,7 +37,7 @@ export class AppComponent implements OnInit {
   on_makeRpcRequest_BtnClick() {
     const a = Math.floor(Math.random() * 10);
     const b = Math.floor(Math.random() * 10);
-    this.wss.call(
+    this.rpc.call(
       new AddTwoNumbers(a, b),
       (msg: AddResult) => {
         console.log( msg.result);

@@ -3,15 +3,8 @@ import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, EVENT_TYPE } from '../../../../common/protocol/msg_types';
 import { XBaseMsg, XRequest, XResponse, XEvent } from '../../../../common/protocol/generic';
-import { EventHandler } from './eventhandler.service';
-import { RemoteProcCall } from './remoteproccall.service';
-
-export class EventSubscription {
-  client_id: number;
-  constructor( public event_type: EVENT_TYPE ) {
-    this.client_id = Math.floor( Math.random() * 1_000_000 );
-  }
-}
+import { EventHandlerService } from './eventhandler.service';
+import { RemoteProcCallService } from './remoteproccall.service';
 
 /**
  * This service is used for communication with server through websocket.
@@ -24,11 +17,11 @@ export class WebsocketClientService {
   private wsurl: string;
   private ws: WebSocket;
   // websocket lifecycle listeners
-  private onOpenListeners: ((readyState: number) => void)[];
-  private onCloseListeners: ((readyState: number) => void)[];
+  private onOpenListeners: (( number ) => void)[];
+  private onCloseListeners: (( number ) => void)[];
 
-  constructor( public eventHandler: EventHandler,
-               public rpc: RemoteProcCall ) {
+  constructor( public eventHandler: EventHandlerService,
+               public rpc: RemoteProcCallService ) {
     this.wsurl = 'ws://localhost:8999';
     this.ws = undefined;
     this.onOpenListeners = [];
@@ -69,13 +62,14 @@ export class WebsocketClientService {
 
   /**
    * Lifecycle listeners
+   * argument of lambda is value of WebSocket.readyState
    * // TODO: unsubscribe
    * @param onOpenListener
    */
-  registerOnOpenListener(onOpenListener: (readyState: number) => void) {
+  registerOnOpenListener(onOpenListener: ( number ) => void) {
     this.onOpenListeners.push( onOpenListener );
   }
-  registerOnCloseListener(onCloseListener: (readyState: number) => void) {
+  registerOnCloseListener(onCloseListener: ( number ) => void) {
     this.onCloseListeners.push( onCloseListener );
   }
 
