@@ -1,10 +1,9 @@
 import { Injectable } from '@angular/core';
-import { EventEmitter } from 'events';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, EVENT_TYPE } from '../../../../common/protocol/msg_types';
-import { XBaseMsg, XRequest, XResponse, XEvent } from '../../../../common/protocol/generic';
+import { XBaseMsg, XResponse, XEvent, XRequest } from '../../../../common/protocol/generic';
 import { EventHandler } from './eventhandler.service';
-import { RemoteProcCall } from './remoteproccall.service';
+import { EventEmitter } from 'events';
 
 export class EventSubscription {
   client_id: number;
@@ -23,12 +22,12 @@ export class WebsocketClientService {
 
   private wsurl: string;
   private ws: WebSocket;
+  private rpcBus: EventEmitter;
   // websocket lifecycle listeners
   private onOpenListeners: ((readyState: number) => void)[];
   private onCloseListeners: ((readyState: number) => void)[];
 
-  constructor( public eventHandler: EventHandler,
-               public rpc: RemoteProcCall ) {
+  constructor( public eventHandler: EventHandler) {
     this.wsurl = 'ws://localhost:8999';
     this.ws = undefined;
     this.onOpenListeners = [];
@@ -46,8 +45,14 @@ export class WebsocketClientService {
       // const baseMsg = JSON.parse(ev.data) as BaseMsg; // JSON string
       const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XBaseMsg; // MsgPack
       switch ( baseMsg.type ) {
-        case MSG_TYPE.RESPONSE: this.rpc.handle( baseMsg as XResponse);         break;
-        case MSG_TYPE.EVENT:    this.eventHandler.handle( baseMsg as XEvent );  break;
+        case MSG_TYPE.RESPONSE: {
+          const response = baseMsg as XResponse;
+          console.log( response );
+          this.rpcBus.emit(response.id.toString(), response);
+        } break;
+        case MSG_TYPE.EVENT: {
+          this.eventHandler.handle( baseMsg as XEvent );
+        } break;
       }
     };
     // call registered lifecycle listeners
@@ -79,10 +84,36 @@ export class WebsocketClientService {
     this.onCloseListeners.push( onCloseListener );
   }
 
-  async send(msg: XBaseMsg) {
+  private async send(msg: XBaseMsg) {
     // this.ws.send( JSON.stringify(msg)); // JSON string
     this.ws.send(msgpack.encode(msg)); // MsgPack
     console.log(msg);
   }
+
+  /**
+     * rpc call ( sends request and await for response )
+     * @param req - request
+     * @param onResponseListener - called when response arrives
+     * @param onSentListener - called right after sending message
+     */
+    call
+        <T extends XRequest<K>, K extends XResponse>
+        (
+            req: T,
+            onResponseListener?: (response: K) => any,
+            onSentListener?: () => any,
+        ): void {
+            // send request through websocket
+            this.send(req);
+            // callback called right after sending
+            if (onSentListener !== undefined) {
+                onSentListener();
+            }
+            // subscribe on queue for response with the same msg id as req.id
+            // TODO: if ( K instanceof VoidResponse ) { return; } // but in case of VoidResponse caller shouldn't provide listener
+            if (onResponseListener !== undefined) {
+                this.rpcBus.on(req.id.toString(), onResponseListener);
+            }
+        }
 
 }

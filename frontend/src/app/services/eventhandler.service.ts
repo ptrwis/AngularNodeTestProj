@@ -46,9 +46,9 @@ export class EventHandler {
       event_type: EVENT_TYPE,
       listener: ( event: T ) => void
     ): EventSubscription {
-        const sub = new EventSubscription( event_type );
+        const sub = new EventSubscription(event_type);
         this.eventBus.on( sub.eventTypeStr(), listener);
-        this.subscribers.set( sub.id, listener );
+        this.subscribers.set(sub.id, listener);
         return sub;
   }
 
@@ -61,12 +61,16 @@ export class EventHandler {
         sub.eventTypeStr(),
         this.subscribers.get(sub.id)
     );
-    this.subscribers.delete( sub.id );
+    this.subscribers.delete(sub.id);
   }
 
+  /**
+   *
+   * @param msg
+   */
   handle( msg: XEvent ) {
     console.log( msg );
-    this.eventBus.emit( msg.event_type.valueOf().toString(), msg);
+    this.eventBus.emit(msg.event_type.valueOf().toString(), msg);
   }
 
 }
