@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { WebsocketClientService } from './websocket.service';
 import { SignInReq, SignInResp } from '../../../../common/protocol/sign_in';
 import { Result } from '../../../../common/protocol/msg_types';
+import { RemoteProcCallService } from './remoteproccall.service';
 
 @Injectable()
 export class AuthService {
@@ -9,7 +10,7 @@ export class AuthService {
   token: String;
   username: string;
 
-  constructor(private wss: WebsocketClientService) {
+  constructor(private rpc: RemoteProcCallService) {
     this.token = null;
   }
 
@@ -24,7 +25,7 @@ export class AuthService {
   login( username: string, password: string,
          onResponse: (resp: SignInResp) => void) {
     // start of 'login' method body
-    this.wss.call(
+    this.rpc.call(
         // request
         new SignInReq(username, password),
         // callback called after receiving response

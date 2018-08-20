@@ -24,8 +24,8 @@ export class WebsocketClientService {
   private ws: WebSocket;
   private rpcBus: EventEmitter;
   // websocket lifecycle listeners
-  private onOpenListeners: ((readyState: number) => void)[];
-  private onCloseListeners: ((readyState: number) => void)[];
+  private onOpenListeners: (( number ) => void)[];
+  private onCloseListeners: (( number ) => void)[];
 
   constructor( public eventHandler: EventHandler) {
     this.wsurl = 'ws://localhost:8999';
@@ -74,13 +74,14 @@ export class WebsocketClientService {
 
   /**
    * Lifecycle listeners
+   * argument of lambda is value of WebSocket.readyState
    * // TODO: unsubscribe
    * @param onOpenListener
    */
-  registerOnOpenListener(onOpenListener: (readyState: number) => void) {
+  registerOnOpenListener(onOpenListener: ( number ) => void) {
     this.onOpenListeners.push( onOpenListener );
   }
-  registerOnCloseListener(onCloseListener: (readyState: number) => void) {
+  registerOnCloseListener(onCloseListener: ( number ) => void) {
     this.onCloseListeners.push( onCloseListener );
   }
 

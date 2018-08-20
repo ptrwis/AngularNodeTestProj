@@ -22,6 +22,7 @@ export class EventSubscription {
   }
 
 /**
+* This service handles messages which are events- they are not reponses to requests.
 * Handling messages on WebSocket level is implemented in WebsocketClientService
 * usage:
 * sub1 = eventHandler.subscribeOnMessage( CHAT_MSG, (msg: ChatMsg) => console.log(msg.msg) );
@@ -33,7 +34,7 @@ export class EventSubscription {
 export class EventHandler {
 
     private eventBus: EventEmitter;
-    private subscribers: Map< number, ( event: XEvent ) => void >;
+    private subscribers: Map< number, ( XEvent ) => void >;
 
   /**
    * Subscription to particular event.
@@ -44,7 +45,7 @@ export class EventHandler {
    */
   subscribeOnMessage<T extends XEvent>(
       event_type: EVENT_TYPE,
-      listener: ( event: T ) => void
+      listener: ( T ) => void
     ): EventSubscription {
         const sub = new EventSubscription(event_type);
         this.eventBus.on( sub.eventTypeStr(), listener);
