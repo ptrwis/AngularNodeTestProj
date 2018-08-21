@@ -98,7 +98,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   ngOnDestroy() {
     // subscription is in ngOnInit
     this.sub.unsubscribe();
-    this.wss.send( new LeaveTheRoomMsg(this.roomid) );
+    this.wss.call( new LeaveTheRoomMsg(this.roomid) );
   }
 
   /**
