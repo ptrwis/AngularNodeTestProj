@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { WebsocketClientService } from './websocket.service';
 import { SignInReq, SignInResp } from '../../../../common/protocol/sign_in';
 import { Result } from '../../../../common/protocol/msg_types';
 import { RemoteProcCallService } from './remoteproccall.service';

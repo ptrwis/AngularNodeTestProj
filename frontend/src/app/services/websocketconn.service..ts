@@ -1,16 +1,17 @@
-import { XBaseMsg } from "../../../../common/protocol/generic";
 import * as msgpack from 'msgpack-lite';
+import { XBaseMsg } from '../../../../common/protocol/generic';
 
-export class MyWebsocket {
+export class WebsocketConnService {
 
     private url: string;
     private ws: WebSocket;
     private onMessage: (MessageEvent) => void;
     // websocket lifecycle listeners
     private onOpenListeners: ((number) => void)[];
-    private onCloseListeners: ((number) => void)[];
+    private onCloseListeners: ((CloseEvent) => void)[];
 
     constructor() {
+        // TODO: move outside
         this.url = 'ws://localhost:8999';
         this.ws = undefined;
         this.onOpenListeners = [];
@@ -23,10 +24,10 @@ export class MyWebsocket {
         }
         this.ws = new WebSocket(this.url);
         this.ws.binaryType = 'arraybuffer'; // necessary!
-        this.ws.onmessage = this.onMessage;
+        this.setOnMessage( this.onMessage );
         // assign lambdas calling all registered lifecycle listeners
         this.ws.onopen = (ev: Event) => this.onOpenListeners.forEach(listener => listener(this.ws.readyState));
-        this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach(listener => listener(0));
+        this.ws.onclose = (ev: CloseEvent) => this.onCloseListeners.forEach(listener => listener(ev));
     }
 
     disconnect() {
@@ -41,7 +42,13 @@ export class MyWebsocket {
         return this.ws !== undefined && this.ws.readyState === 1;
     }
 
-    setOnMessage( handler: (MessageEvent) => void ) {
+    /**
+     * Listener invoked when any message arrives.
+     * This method was created to declare handling to WebsocketSetup to
+     * avoid circular dependency between this class and RPCService
+     * @param handler
+     */
+    setOnMessage(handler: (MessageEvent) => void) {
         this.onMessage = handler;
     }
 
@@ -60,9 +67,9 @@ export class MyWebsocket {
 
 
     /**
-     * 
-     * @param ev 
-     * @param onSentListener 
+     *
+     * @param ev
+     * @param onSentListener
      */
     send(ev: XBaseMsg, onSentListener?: () => any) {
         this.ws.send(msgpack.encode(ev)); // MsgPack

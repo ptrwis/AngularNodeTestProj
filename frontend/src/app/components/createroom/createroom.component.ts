@@ -58,7 +58,6 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   private chatEventSub: EventSubscription;
 
   constructor(
-    // private wss: WebsocketClientService,
     private rpc: RemoteProcCallService,
     private eventHandler: EventHandlerService,
     private route: ActivatedRoute,

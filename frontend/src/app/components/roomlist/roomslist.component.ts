@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, NavigationExtras } from '@angular/router';
-import { WebsocketClientService } from '../../services/websocket.service';
+import { Router } from '@angular/router';
 import { GetRoomList, RoomList } from '../../../../../common/protocol/get_room_list';
 import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
 import { Result, EVENT_TYPE } from '../../../../../common/protocol/msg_types';
@@ -10,6 +9,7 @@ import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
 import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
 import { RemoteProcCallService } from '../../services/remoteproccall.service';
 import { EventHandlerService } from '../../services/eventhandler.service';
+import { WebsocketConnService } from '../../services/websocketconn.service.';
 
 @Component({
   selector: 'roomlist',
@@ -46,7 +46,7 @@ export class RoomlistComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private wss: WebsocketClientService,
+    private wss: WebsocketConnService,
     private rpc: RemoteProcCallService,
     private eh: EventHandlerService,
     private router: Router,
@@ -63,16 +63,15 @@ export class RoomlistComponent implements OnInit {
     this.refresh();
     this.eh.subscribeOnMessage(
       EVENT_TYPE.ROOM_HAS_BEEN_CREATED,
-      (msg: RoomHasBeenCreated) => 
+      (msg: RoomHasBeenCreated) =>
         this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
     );
   }
 
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
-    this.rpc.call(
+    this.wss.send(
       new JoinRoomMsg( this.selectedRoom.id ),
-      undefined, // no reponse - no handler
       () => this.router.navigate( ['./createroom', +event.data.id] ) // call after sending
     );
   }

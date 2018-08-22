@@ -9,17 +9,17 @@ import { XEvent } from '../../../../common/protocol/generic';
  */
 
 export class EventSubscription {
-    id: number;
-    constructor( public event_type: EVENT_TYPE ) {
-      this.id = Math.floor( Math.random() * 1_000_000 );
-    }
-    /**
-     * TODO: this sucks
-     */
-    eventTypeStr() {
-        return this.event_type.valueOf().toString();
-    }
+  id: number;
+  constructor(public event_type: EVENT_TYPE) {
+    this.id = Math.floor(Math.random() * 1_000_000);
   }
+  /**
+   * TODO: this sucks
+   */
+  eventTypeStr() {
+    return this.event_type.valueOf().toString();
+  }
+}
 
 /**
 * This service handles messages which are events- they are not reponses to requests.
@@ -31,10 +31,15 @@ export class EventSubscription {
 * eventHandler.unsubscribeFromMessage(sub1);
 */
 @Injectable()
-export class EventHandler {
+export class EventHandlerService {
 
-    private eventBus: EventEmitter;
-    private subscribers: Map< number, ( XEvent ) => void >;
+  private eventBus: EventEmitter;
+  private subscribers: Map<number, (XEvent) => void>;
+
+  constructor() {
+    this.eventBus = new EventEmitter();
+    this.subscribers = new Map();
+  }
 
   /**
    * Subscription to particular event.
@@ -44,23 +49,23 @@ export class EventHandler {
    * @param listener
    */
   subscribeOnMessage<T extends XEvent>(
-      event_type: EVENT_TYPE,
-      listener: ( T ) => void
-    ): EventSubscription {
-        const sub = new EventSubscription(event_type);
-        this.eventBus.on( sub.eventTypeStr(), listener);
-        this.subscribers.set(sub.id, listener);
-        return sub;
+    event_type: EVENT_TYPE,
+    listener: (T) => void
+  ): EventSubscription {
+    const sub = new EventSubscription(event_type);
+    this.eventBus.on(sub.eventTypeStr(), listener);
+    this.subscribers.set(sub.id, listener);
+    return sub;
   }
 
   /**
    *
    * @param key value returned from subscribeOnMessage(...)
    */
-  unsubscribeFromMessage( sub: EventSubscription ) {
+  unsubscribeFromMessage(sub: EventSubscription) {
     this.eventBus.removeListener(
-        sub.eventTypeStr(),
-        this.subscribers.get(sub.id)
+      sub.eventTypeStr(),
+      this.subscribers.get(sub.id)
     );
     this.subscribers.delete(sub.id);
   }
@@ -69,8 +74,8 @@ export class EventHandler {
    *
    * @param msg
    */
-  handle( msg: XEvent ) {
-    console.log( msg );
+  handle(msg: XEvent) {
+    console.log(msg);
     this.eventBus.emit(msg.event_type.valueOf().toString(), msg);
   }
 

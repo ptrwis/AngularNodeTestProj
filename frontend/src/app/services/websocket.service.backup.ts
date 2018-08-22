@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, EVENT_TYPE } from '../../../../common/protocol/msg_types';
 import { XBaseMsg, XResponse, XEvent, XRequest } from '../../../../common/protocol/generic';
-import { EventHandler } from './eventhandler.service';
+import { EventHandlerService } from './eventhandler.service';
 import { EventEmitter } from 'events';
 
 export class EventSubscription {
@@ -29,7 +29,7 @@ export class WebsocketClientService {
   private onOpenListeners: ((number) => void)[];
   private onCloseListeners: ((number) => void)[];
 
-  constructor(public eventHandler: EventHandler) {
+  constructor(public eventHandler: EventHandlerService) {
     this.wsurl = 'ws://localhost:8999';
     this.ws = undefined;
     this.onOpenListeners = [];
@@ -118,9 +118,9 @@ export class WebsocketClientService {
   }
 
   /**
-   * 
-   * @param ev 
-   * @param onSentListener 
+   *
+   * @param ev
+   * @param onSentListener
    */
   send( ev: XBaseMsg, onSentListener?: () => any ) {
     this.ws.send(msgpack.encode(ev)); // MsgPack

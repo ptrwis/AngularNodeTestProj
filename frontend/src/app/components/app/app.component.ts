@@ -1,10 +1,10 @@
 import { AddTwoNumbers, AddResult } from '../../../../../common/protocol/addition';
 import { Component, OnInit } from '@angular/core';
-import { WebsocketClientService } from '../../services/websocket.service';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { RemoteProcCallService } from '../../services/remoteproccall.service';
-import { EventHandlerService } from '../../services/eventhandler.service';
+import { WebsocketSetup } from '../../services/websocketsetup.service';
+import { WebsocketConnService } from '../../services/websocketconn.service.';
 
 @Component({
   selector: 'app-root',
@@ -19,7 +19,8 @@ export class AppComponent implements OnInit {
 
   constructor( private router: Router,
                private authService: AuthService,
-               private wss: WebsocketClientService,
+               private wssetup: WebsocketSetup,
+               private wss: WebsocketConnService,
                private rpc: RemoteProcCallService) {
     wss.registerOnOpenListener( (readyState) => this.connState = readyState.toString() );
     wss.registerOnCloseListener( () => {
@@ -31,6 +32,7 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // this.wssetup.setup() // in constructor
     this.wss.connect();
   }
 

@@ -18,11 +18,12 @@ import { AppRoutingModule } from './app-routing.module';
 import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
 
-import { WebsocketClientService } from './services/websocket.service';
 import { EventHandlerService } from './services/eventhandler.service';
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
 import { RemoteProcCallService } from './services/remoteproccall.service';
+import { WebsocketConnService } from './services/websocketconn.service.';
+import { WebsocketSetup } from './services/websocketsetup.service';
 
 @NgModule({
   declarations: [
@@ -46,9 +47,10 @@ import { RemoteProcCallService } from './services/remoteproccall.service';
     TableModule
   ],
   providers: [
-    WebsocketClientService,
     RemoteProcCallService,
     EventHandlerService,
+    WebsocketConnService,
+    WebsocketSetup,
     AuthGuard,
     AuthService
   ],
