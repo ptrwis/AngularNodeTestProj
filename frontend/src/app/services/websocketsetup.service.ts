@@ -6,26 +6,19 @@ import { EventHandlerService } from './eventhandler.service';
 import { WebsocketConnService } from './websocketconn.service.';
 import { RemoteProcCallService } from './remoteproccall.service';
 
-export class EventSubscription {
-  client_id: number;
-  constructor(public event_type: EVENT_TYPE) {
-    this.client_id = Math.floor(Math.random() * 1_000_000);
-  }
-}
-
 /**
- * Normally it would be part of WebsocketConnService, but thenn there was cyclic dependency
- * between WebsocketConnService and RemoteProcCallService (first one called .handle() on
- * the second one and the second one called .send() on the first one)
+ * Normally it would be part of WebsocketConnService, but it makes cyclic dependency
+ * between WebsocketConnService and RemoteProcCallService (first one call .handle() on
+ * the second one and the second one call .send() on the first one)
  * It is supposed to be a single instance injected in the main app component,
- * and use everywhere where necessary.
+ * and nowhere else.
  */
 @Injectable()
 export class WebsocketSetup {
 
   constructor(public ws: WebsocketConnService,
-    public eventHandler: EventHandlerService,
-    public rpc: RemoteProcCallService) {
+              public eventHandler: EventHandlerService,
+              public rpc: RemoteProcCallService) {
     this.ws.setOnMessage(
       (ev: MessageEvent) => {
         // TODO: (de)serializer as injectable service, two impls: JSON and MSGPACK

@@ -48,11 +48,13 @@ export class WebsocketClientService {
       const baseMsg = msgpack.decode(new Uint8Array(ev.data)) as XBaseMsg; // MsgPack
       switch (baseMsg.type) {
         case MSG_TYPE.RESPONSE: {
+          // this.handleResponse
           const response = baseMsg as XResponse;
           console.log(response);
           this.rpcBus.emit(response.id.toString(), response);
         } break;
         case MSG_TYPE.EVENT: {
+          // this.handleEvent
           this.eventHandler.handle(baseMsg as XEvent);
         } break;
       }

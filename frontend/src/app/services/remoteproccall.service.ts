@@ -33,10 +33,10 @@ export class RemoteProcCallService {
   call
     <T extends XRequest<K>, K extends XResponse>
     (
-    req: T,
-    onResponseListener?: (response: K) => any,
-    onSentListener?: () => any,
-  ): void {
+      req: T,
+      onResponseListener?: (response: K) => any,
+      onSentListener?: () => any,
+    ): void {
     // send request through websocket
     // this.ws.send( JSON.stringify(msg)); // JSON string
     this.ws.send(req); // MsgPack
