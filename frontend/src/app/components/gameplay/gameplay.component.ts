@@ -2,7 +2,7 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { LeaveTheRoomMsg } from '../../../../../common/protocol/leave_room';
-import { WebsocketConnService } from '../../services/websocketconn.service.';
+import { WebsocketService } from '../../services/webosocket.service';
 
 @Component({
   selector: 'gameplay',
@@ -39,7 +39,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   private sub: any; // subscription to route's parameters change
 
   constructor(
-    private wss: WebsocketConnService,
+    private wss: WebsocketService,
     private router: Router,
     private route: ActivatedRoute,
   ) { }

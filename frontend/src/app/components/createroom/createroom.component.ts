@@ -6,8 +6,7 @@ import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
 import { Player } from '../../../../../common/protocol/dto/player';
 import { EVENT_TYPE } from '../../../../../common/protocol/msg_types';
-import { EventHandlerService, EventSubscription } from '../../services/eventhandler.service';
-import { RemoteProcCallService } from '../../services/remoteproccall.service';
+import { WebsocketService, EventSubscription } from '../../services/webosocket.service';
 
 @Component({
   selector: 'createroom',
@@ -58,8 +57,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   private chatEventSub: EventSubscription;
 
   constructor(
-    private rpc: RemoteProcCallService,
-    private eventHandler: EventHandlerService,
+    private wss: WebsocketService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -72,22 +70,22 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.routeParamsSub = this.route.params.subscribe(params => {
       this.roomid = +params['id']; // (+) converts string 'id' to a number
-      this.rpc.call(
+      this.wss.call(
         new GetRoomDetails(this.roomid),
         (resp: RoomDetailsResp) => {
           this.roomname = resp.room.name;
           this.players = resp.players;
         }
       );
-      this.peerJoinedTheRoomMsgSub = this.eventHandler.subscribeOnMessage(
+      this.peerJoinedTheRoomMsgSub = this.wss.subscribeOnMessage(
         EVENT_TYPE.PEER_JOINED_THE_ROOM,
         (msg: PeerJoinedTheRoomMsg) => this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
       );
-      this.peerLeftTheRoomSub = this.eventHandler.subscribeOnMessage(
+      this.peerLeftTheRoomSub = this.wss.subscribeOnMessage(
         EVENT_TYPE.PEER_LEFT_THE_ROOM,
         (msg: PeerLeftTheRoomMsg) => this.players = this.players.filter( p => p.id !== msg.peerid )
       );
-      this.chatEventSub = this.eventHandler.subscribeOnMessage(
+      this.chatEventSub = this.wss.subscribeOnMessage(
         EVENT_TYPE.CHAT_EVENT,
         (msg: ChatEvent) => this.chatMsgs = [ msg.msg, ...this.chatMsgs ]
       );
@@ -103,12 +101,12 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     // ( subscription is in ngOnInit )
     this.routeParamsSub.unsubscribe();
     // unsubscribe from 'bussiness-logic' events
-    this.eventHandler.unsubscribeFromMessage( this.peerJoinedTheRoomMsgSub );
-    this.eventHandler.unsubscribeFromMessage( this.peerLeftTheRoomSub );
-    this.eventHandler.unsubscribeFromMessage( this.chatEventSub );
+    this.wss.unsubscribeFromMessage( this.peerJoinedTheRoomMsgSub );
+    this.wss.unsubscribeFromMessage( this.peerLeftTheRoomSub );
+    this.wss.unsubscribeFromMessage( this.chatEventSub );
     // look at this.onStartGameButtonClick()
     if ( this.dontSignalLeavingTheRoomInNgOnDestroy !== true ) {
-      this.rpc.call( new LeaveTheRoomMsg( this.roomid ) );
+      this.wss.call( new LeaveTheRoomMsg( this.roomid ) );
     }
   }
 
@@ -123,7 +121,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   }
 
   sendChatMsg() {
-    this.rpc.call( new ChatMsg( this.chatInput, this.roomid ) );
+    this.wss.call( new ChatMsg( this.chatInput, this.roomid ) );
     this.chatInput = '';
   }
 

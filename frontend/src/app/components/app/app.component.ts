@@ -2,9 +2,7 @@ import { AddTwoNumbers, AddResult } from '../../../../../common/protocol/additio
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { RemoteProcCallService } from '../../services/remoteproccall.service';
-import { WebsocketSetup } from '../../services/websocketsetup.service';
-import { WebsocketConnService } from '../../services/websocketconn.service.';
+import { WebsocketService } from '../../services/webosocket.service';
 
 @Component({
   selector: 'app-root',
@@ -19,27 +17,26 @@ export class AppComponent implements OnInit {
 
   constructor( private router: Router,
                private authService: AuthService,
-               private wssetup: WebsocketSetup,
-               private wss: WebsocketConnService,
-               private rpc: RemoteProcCallService) {
-    wss.registerOnOpenListener( (readyState) => this.connState = readyState.toString() );
-    wss.registerOnCloseListener( () => {
-      authService.logout(); // should it send info to server? where? ( client can sign out manually )
-      this.router.navigate(['./signin']);
-      // alert('You have been disconnected!'); // not here
-    } );
-    wss.registerOnCloseListener( (readyState) => this.connState = readyState.toString() );
+               private wss: WebsocketService) {
   }
 
   ngOnInit(): void {
     // this.wssetup.setup() // in constructor
-    this.wss.connect();
+    this.wss.connect(
+      () => this.connState = 'connected',
+      () => {
+        this.connState = 'disconnected';
+        this.authService.logout(); // should it send info to server? where? ( client can sign out manually )
+        this.router.navigate(['./signin']);
+        // alert('You have been disconnected!'); // not here
+      }
+    );
   }
 
   on_makeRpcRequest_BtnClick() {
     const a = Math.floor(Math.random() * 10);
     const b = Math.floor(Math.random() * 10);
-    this.rpc.call(
+    this.wss.call(
       new AddTwoNumbers(a, b),
       (msg: AddResult) => {
         console.log( msg.result);

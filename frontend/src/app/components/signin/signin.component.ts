@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { Result } from '../../../../../common/protocol/msg_types';
-import { WebsocketConnService } from '../../services/websocketconn.service.';
+import { WebsocketService } from '../../services/webosocket.service';
 
 @Component({
   selector: 'signin',
@@ -15,7 +15,7 @@ export class SignInComponent implements OnInit, OnDestroy {
   password: string;
 
   constructor(
-    private wss: WebsocketConnService,
+    private wss: WebsocketService,
     private router: Router,
     private route: ActivatedRoute,
     private location: Location,

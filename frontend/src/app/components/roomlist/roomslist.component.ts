@@ -7,9 +7,7 @@ import { Room } from '../../../../../common/protocol/dto/room';
 import { AuthService } from '../../services/auth.service';
 import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
 import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
-import { RemoteProcCallService } from '../../services/remoteproccall.service';
-import { EventHandlerService } from '../../services/eventhandler.service';
-import { WebsocketConnService } from '../../services/websocketconn.service.';
+import { WebsocketService } from '../../services/webosocket.service';
 
 @Component({
   selector: 'roomlist',
@@ -46,14 +44,12 @@ export class RoomlistComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private wss: WebsocketConnService,
-    private rpc: RemoteProcCallService,
-    private eh: EventHandlerService,
+    private wss: WebsocketService,
     private router: Router,
   ) {}
 
   refresh() {
-    this.rpc.call(
+    this.wss.call(
       new GetRoomList(),
       (rl: RoomList) => this.rooms = rl.rooms
     );
@@ -61,7 +57,7 @@ export class RoomlistComponent implements OnInit {
 
   ngOnInit(): void {
     this.refresh();
-    this.eh.subscribeOnMessage(
+    this.wss.subscribeOnMessage(
       EVENT_TYPE.ROOM_HAS_BEEN_CREATED,
       (msg: RoomHasBeenCreated) =>
         this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
@@ -81,7 +77,7 @@ export class RoomlistComponent implements OnInit {
   }
 
   onCreateRoomButtonClick() {
-    this.rpc.call(
+    this.wss.call(
       new CreateRoomMsg( `${this.authService.username}'s room` ), // TODO: + user_id / owner_id
       (resp: RoomCreatedResp) => {
         switch ( resp.result ) {
