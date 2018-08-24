@@ -266,7 +266,9 @@ class GameServer {
             } break;
             case MSG_TYPE.GET_ROOM_LIST: {
                 let request = baseMsg as GetRoomList;
-                // TODO: cache it, change when room is created or removed
+                // TODO: Cache it, change when room is created or removed.
+                // There is problem with caching because response is msgpacked, but we have to hange id of response
+                // for every request (request.id==response.id). -> We can just send response as XEvent.
                 let rooms: Room[] = [];
                 this.rooms.forEach((v, k) => rooms.push(new Room(v.roomname, v.peers.length, k)));
                 sender.send( new RoomList(rooms, request) );
