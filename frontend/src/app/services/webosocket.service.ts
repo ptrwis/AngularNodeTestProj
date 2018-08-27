@@ -43,10 +43,10 @@ export class WebsocketService {
    * Websocket API doesn't have 'connect' method, so we emulate it
    * by just creating new Websocket and reassigning all parameters.
    * TODO: we cam fall back to registering onOpen/onClose listeners,
-   * eventually throwing exception if connection is already 
+   * eventually throwing exception if connection is already
    * opened / closed.
-   * @param onOpenCallback 
-   * @param onCloseCallback 
+   * @param onOpenCallback
+   * @param onCloseCallback
    */
   connect(
     onOpenCallback: () => void,
@@ -95,8 +95,8 @@ export class WebsocketService {
   /**
    * Encode message (json, msgpack, ...) and send.
    * This is internal, private method used by others.
-   * @param ev 
-   * @param onSentListener 
+   * @param ev
+   * @param onSentListener
    * @returns value returned by onSentListener
    */
   private encodeAndSend(ev: XBaseMsg, onSentListener?: () => any) {
@@ -112,8 +112,8 @@ export class WebsocketService {
    * ============================
    * Send message (without response)
    * TODO: introduce type corresponding to 'message without response' ('orphan msg'?)
-   * @param ev 
-   * @param onSentListener 
+   * @param ev
+   * @param onSentListener
    * @returns value returned by onSentListener
    */
   send(ev: XBaseMsg, onSentListener?: () => any) {
@@ -126,9 +126,9 @@ export class WebsocketService {
    * ============================
    * This is RPC-style call (send request and await for response).
    * It doesn't work in Typescript (yet), but this structure of method
-   * should allow developer to create a protocol- a pair of Request and 
+   * should allow developer to create a protocol- a pair of Request and
    * corresponding Response. This way without being explicit compiler
-   * should figure out what is the type of response basing on the type 
+   * should figure out what is the type of response basing on the type
    * of request.
    * TODO: for sending without response we have this()
    * @param req - request
@@ -162,21 +162,21 @@ export class WebsocketService {
 
   /**
    * =========================
-   *    handling of events
+   *    handling  events
    * =========================
    */
 
   /**
    * Subscribe to particular event.
    * unsubscribeFromMessage() to unsubscribe
-   * @param event_type 
-   * @param listener 
+   * @param event_type
+   * @param listener
    */
   subscribeOnMessage<T extends XEvent>(
     event_type: EVENT_TYPE,
     listener: (T) => void
   ): EventSubscription {
-    // idk how to get T.event_type, 
+    // idk how to get T.event_type,
     const sub = new EventSubscription(event_type, listener);
     this.eventBus.on(`${sub.event_type}`, sub.listener);
     return sub;
