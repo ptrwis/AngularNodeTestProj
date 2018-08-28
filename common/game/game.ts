@@ -1,7 +1,13 @@
 import { Vec2d } from "./vec2d";
 
-
-enum Event{ LEFT, RIGHT, STRAIGHT, /*SHOT*/ }
+/**
+ * 
+ */
+enum Event{ 
+    LEFT,    // pos = p.rotateAround( -wt, (p-dir.normal) * radious )
+    RIGHT,   // pos = p.rotateAround(  wt, (p+dir.normal) * radious )
+    NEUTRAL, // p(t) = p0 + v * dir * t
+    /*SHOT*/ }
 
 /**
  * 
@@ -9,17 +15,30 @@ enum Event{ LEFT, RIGHT, STRAIGHT, /*SHOT*/ }
 class GameEvent {
     time: number;
     event: Event;
+    equals( other: GameEvent ) {
+        return this.time === other.time && this.event === other.event;
+    }
 }
 
 /**
  * Player's state when he's last event arrived.
  * Current player state is snapshot + event * t, 
  * same like x(t) = x0 + v * t
+ * When game starts, time=0, pos and dir are eg random, 
+ * event is some neutral event like 'go forward'.
+ * Event is the event which happend when player was in (pos, dir, time)
  */
 class PlayerSnapshot {
     time: number;
     pos: Vec2d;
     dir: Vec2d;
+    event: GameEvent;
+}
+
+function update(snap: PlayerSnapshot,
+                time: number ) : PlayerSnapshot {
+    // update new snapshot with new time and new event outside this function
+    return snap + snap.event * (time - snap.time);
 }
 
 /**
@@ -27,8 +46,12 @@ class PlayerSnapshot {
  * position we only need he's last event and snapshot from that moment
  */
 class ForeignPlayer {
-    lastEvent: GameEvent;
     snapshot: PlayerSnapshot;
+    lastEvent: GameEvent;
+    update( ev: GameEvent ) {
+        this.snapshot = this.snapshot + this.lastEvent * dt;
+        this.lastEvent = ev;
+    }
 }
 
 /**
@@ -41,25 +64,19 @@ class ForeignPlayer {
 class LocalPlayer {
     snapshot: PlayerSnapshot;
     unconfirmedEvents: GameEvent[];
-    submitLocalEvent( ev: GameEvent){
+    submitLocalEvent( ev: GameEvent) {
         this.unconfirmedEvents.push( ev);
     }
-    submitRemoteEvent( ev: GameEvent){
-        if( ev == this.unconfirmedEvents[0] ){
-            this.unconfirmedEvents.shift();
-            /**
-             * 1. player.snapshot = player.snapshot + player.lastEvent * dt
-             * 2. player.lastEvent = ev;
-             */
-        }else{
-            /**
-             * 1. until( this.unconfirmedEvents != ev ) {
-             *      this.unconfirmedEvents.shift();
-             *    }
-             * 2. player.snapshot = player.snapshot + player.lastEvent * dt
-             * 3. player.lastEvent = ev;
-             */
-        }
+    submitRemoteEvent( ev: GameEvent) {
+        this.unconfirmedEvents.forEach( e => {
+            if( e.equals(ev) == false ) {
+                this.unconfirmedEvents.shift();
+            }
+        });
+        /*
+        * 2. player.snapshot = player.snapshot + player.lastEvent * dt
+        * 3. player.lastEvent = ev;
+        */
     }
 }
 
