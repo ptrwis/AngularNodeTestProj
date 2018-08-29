@@ -20,9 +20,7 @@ function functionByEvent( e: Event ): () => PlayerSnapshot {
     }
 }
 
-/**
- * 
- */
+
 class GameEvent {
     time: number;
     event: Event;
@@ -38,6 +36,7 @@ class State {
 }
 
 /**
+ * PlayerSnapshot = State + GameEvent
  * Player's state when he's last event arrived.
  * Current player state is snapshot + event * t, 
  * same like x(t) = x0 + v * t
@@ -46,11 +45,24 @@ class State {
  * Event is the event which happend when player was in (pos, dir, time)
  */
 class PlayerSnapshot {
-    time: number;
-    pos: Vec2d;
-    dir: Vec2d;
-    // state: State;
+    state: State;
     event: GameEvent;
+}
+
+/**
+ * We must count all possible <events>, and store the first (in time).
+ * After any event, we must recount all possible events only for this single player.
+ * 1. Round Robin
+ * 2. one <-> others
+ * "Circle method" implementation
+ */
+function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
+    // const n = arr.length % 2 == 0 ? arr.length / 2 : (arr.length+1) / 2;
+    const n = arr.length;
+    // const k = n % 2 == 0 ? (n-1)*(n/2) : n*((n-1)/2);
+    for( let i=0; i<n*n; i++ ) {
+        round(arr[i], arr[i+n]);
+    }
 }
 
 function update(snap: PlayerSnapshot,
