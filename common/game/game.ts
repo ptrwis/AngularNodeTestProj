@@ -4,10 +4,21 @@ import { Vec2d } from "./vec2d";
  * 
  */
 enum Event{ 
-    LEFT,    // pos = p.rotateAround( -wt, (p-dir.normal) * radious )
-    RIGHT,   // pos = p.rotateAround(  wt, (p+dir.normal) * radious )
-    NEUTRAL, // p(t) = p0 + v * dir * t
+    LEFT,
+    RIGHT,
+    NEUTRAL,
     /*SHOT*/ }
+
+function functionByEvent( e: Event ): () => PlayerSnapshot {
+    switch( e ) {
+        case Event.NEUTRAL:
+            return () => new PlayerSnapshot(); // return p(t) = p0 + v * dir * t
+        case Event.LEFT:
+            return () => new PlayerSnapshot(); // return p.rotateAround( -w * t, (p-dir.normal) * radious )
+        case Event.RIGHT:
+            return () => new PlayerSnapshot(); // return p.rotateAround(  w * t, (p+dir.normal) * radious )
+    }
+}
 
 /**
  * 
@@ -18,6 +29,12 @@ class GameEvent {
     equals( other: GameEvent ) {
         return this.time === other.time && this.event === other.event;
     }
+}
+
+class State {
+    time: number;
+    pos: Vec2d;
+    dir: Vec2d;
 }
 
 /**
@@ -32,6 +49,7 @@ class PlayerSnapshot {
     time: number;
     pos: Vec2d;
     dir: Vec2d;
+    // state: State;
     event: GameEvent;
 }
 
