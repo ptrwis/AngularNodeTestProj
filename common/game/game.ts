@@ -7,22 +7,7 @@ enum GameEventType{
     LEFT,
     RIGHT,
     NEUTRAL,
-    /*SHOT*/ }
-
-/**
- * Focus - it does not return a PlayerSnapshot, but FUNCTION which takes 0 args and returnes PlayerSnapshot.
- * Function might be polymorphic function of game's object.
- * @param e 
- */
-function functionByEvent( e: GameEventType ): () => PlayerSnapshot {
-    switch( e ) {
-        case GameEventType.NEUTRAL:
-            return () => new PlayerSnapshot(); // return p(t) = p0 + v * dir * t
-        case GameEventType.LEFT:
-            return () => new PlayerSnapshot(); // return p.rotateAround( -w * t, (p-dir.normal) * radious )
-        case GameEventType.RIGHT:
-            return () => new PlayerSnapshot(); // return p.rotateAround(  w * t, (p+dir.normal) * radious )
-    }
+    /*SHOT*/
 }
 
 /**
@@ -30,6 +15,19 @@ function functionByEvent( e: GameEventType ): () => PlayerSnapshot {
  */
 abstract class GameObject {
     abstract stateFunction( e: GameEventType, time: number ): State;
+}
+class SimplePlayer {
+    stateFunction( e: GameEventType, time: number ): State{
+        switch( e ) {
+            case GameEventType.NEUTRAL:
+            // return p(t) = p0 + v * dir * t
+            case GameEventType.LEFT:
+            // return p.rotateAround( -w * t, (p-dir.normal) * radious )
+            case GameEventType.RIGHT:
+            // return p.rotateAround(  w * t, (p+dir.normal) * radious )
+                return new State();
+        }
+    }
 }
 
 /**
@@ -70,6 +68,8 @@ class PlayerSnapshot {
  * 1. Round Robin
  * 2. one <-> others
  * "Circle method" implementation
+ * Outside, we should check crosscuting of functions, they must be of the same 
+ * domain and image (?)
  */
 function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
     // const n = arr.length % 2 == 0 ? arr.length / 2 : (arr.length+1) / 2;
@@ -78,13 +78,6 @@ function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
     for( let i=0; i<n*n; i++ ) {
         round(arr[i], arr[i+n]);
     }
-}
-
-function currentState(snap: PlayerSnapshot,
-                time: number ) : State {
-    // update new snapshot with new time and new event outside this function
-    const fun = functionByEvent(snap.event.event);
-    return snap.state + fun.call(time - snap.event.time);
 }
 
 /**
