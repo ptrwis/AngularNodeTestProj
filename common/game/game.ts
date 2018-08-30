@@ -3,34 +3,39 @@ import { Vec2d } from "./vec2d";
 /**
  * 
  */
-enum Event{ 
+enum GameEventType{ 
     LEFT,
     RIGHT,
     NEUTRAL,
     /*SHOT*/ }
 
-function functionByEvent( e: Event ): () => PlayerSnapshot {
+/**
+ * Focus - it does not return a PlayerSnapshot, but FUNCTION which takes 0 args and returnes PlayerSnapshot.
+ * @param e 
+ */
+function functionByEvent( e: GameEventType ): () => PlayerSnapshot {
     switch( e ) {
-        case Event.NEUTRAL:
+        case GameEventType.NEUTRAL:
             return () => new PlayerSnapshot(); // return p(t) = p0 + v * dir * t
-        case Event.LEFT:
+        case GameEventType.LEFT:
             return () => new PlayerSnapshot(); // return p.rotateAround( -w * t, (p-dir.normal) * radious )
-        case Event.RIGHT:
+        case GameEventType.RIGHT:
             return () => new PlayerSnapshot(); // return p.rotateAround(  w * t, (p+dir.normal) * radious )
     }
 }
 
-
+/**
+ * What player did and when
+ */
 class GameEvent {
     time: number;
-    event: Event;
+    event: GameEventType;
     equals( other: GameEvent ) {
         return this.time === other.time && this.event === other.event;
     }
 }
 
 class State {
-    time: number;
     pos: Vec2d;
     dir: Vec2d;
 }
@@ -66,9 +71,9 @@ function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
 }
 
 function update(snap: PlayerSnapshot,
-                time: number ) : PlayerSnapshot {
+                time: number ) : State {
     // update new snapshot with new time and new event outside this function
-    return snap + snap.event * (time - snap.time);
+    return snap.state + functionByEvent(snap.event.event).call(time - snap.event.time);
 }
 
 /**
@@ -77,10 +82,9 @@ function update(snap: PlayerSnapshot,
  */
 class ForeignPlayer {
     snapshot: PlayerSnapshot;
-    lastEvent: GameEvent;
     update( ev: GameEvent ) {
-        this.snapshot = this.snapshot + this.lastEvent * dt;
-        this.lastEvent = ev;
+        this.snapshot = update( this.snapshot, dt );
+        this.snapshot.event = ev;
     }
 }
 
