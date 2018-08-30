@@ -11,6 +11,7 @@ enum GameEventType{
 
 /**
  * Focus - it does not return a PlayerSnapshot, but FUNCTION which takes 0 args and returnes PlayerSnapshot.
+ * Function might be polymorphic function of game's object.
  * @param e 
  */
 function functionByEvent( e: GameEventType ): () => PlayerSnapshot {
@@ -25,6 +26,13 @@ function functionByEvent( e: GameEventType ): () => PlayerSnapshot {
 }
 
 /**
+ * TODO: change GameEventType to only this player's event
+ */
+abstract class GameObject {
+    abstract stateFunction( e: GameEventType, time: number ): State;
+}
+
+/**
  * What player did and when
  */
 class GameEvent {
@@ -34,7 +42,9 @@ class GameEvent {
         return this.time === other.time && this.event === other.event;
     }
 }
-
+/**
+ * 
+ */
 class State {
     pos: Vec2d;
     dir: Vec2d;
@@ -70,10 +80,11 @@ function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
     }
 }
 
-function update(snap: PlayerSnapshot,
+function currentState(snap: PlayerSnapshot,
                 time: number ) : State {
     // update new snapshot with new time and new event outside this function
-    return snap.state + functionByEvent(snap.event.event).call(time - snap.event.time);
+    const fun = functionByEvent(snap.event.event);
+    return snap.state + fun.call(time - snap.event.time);
 }
 
 /**
