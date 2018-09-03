@@ -4,28 +4,45 @@ import { Vec2d } from "./vec2d";
  * 
  */
 enum GameEventType{ 
-    LEFT,
-    RIGHT,
-    NEUTRAL,
+    TURN_LEFT,
+    TURN_RIGHT,
+    STR8_FORWARD,
     /*SHOT*/
 }
 
-/**
- * TODO: change GameEventType to only this player's event
- */
-abstract class GameObject {
-    abstract stateFunction( e: GameEventType, time: number ): State;
+abstract class AbstractState{
 }
-class SimplePlayer {
-    stateFunction( e: GameEventType, time: number ): State{
+abstract class GameObject<S extends AbstractState> {
+    state: S;
+    abstract stateFunction( e: GameEventType, time: number ): S;
+}
+class PlayerState extends AbstractState {
+    pos: Vec2d;
+    dir: Vec2d;
+    constructor( pos: Vec2d, dir: Vec2d ) {
+        super();
+        this.pos = pos;
+        this.dir = dir;
+    }
+}
+class SimplePlayer extends GameObject<PlayerState> {
+    stateFunction( e: GameEventType, time: number ): PlayerState{
+        const omega = 0.1; // predkosc kolowa
+        const velocity = 0.1; // szybkosc
         switch( e ) {
-            case GameEventType.NEUTRAL:
-            // return p(t) = p0 + v * dir * t
-            case GameEventType.LEFT:
-            // return p.rotateAround( -w * t, (p-dir.normal) * radious )
-            case GameEventType.RIGHT:
-            // return p.rotateAround(  w * t, (p+dir.normal) * radious )
-                return new State();
+            case GameEventType.STR8_FORWARD: {
+                // return p(t) = p0 + v * dir * t
+                return new PlayerState( this.state.pos.add( this.state.dir.mul(velocity * time)), this.state.dir );
+            }
+            case GameEventType.TURN_LEFT: {
+                const dir = this.state.dir.rot( - omega * time );
+                // return p.rotateAround( -w * t, (p-dir.normal) * radious )
+            }
+            case GameEventType.TURN_RIGHT: {
+                const dir = this.state.dir.rot( + omega * time );
+                // return p.rotateAround(  w * t, (p+dir.normal) * radious )
+                return new PlayerState();
+            }
         }
     }
 }
@@ -40,13 +57,6 @@ class GameEvent {
         return this.time === other.time && this.event === other.event;
     }
 }
-/**
- * 
- */
-class State {
-    pos: Vec2d;
-    dir: Vec2d;
-}
 
 /**
  * PlayerSnapshot = State + GameEvent
@@ -58,7 +68,7 @@ class State {
  * Event is the event which happend when player was in (pos, dir, time)
  */
 class PlayerSnapshot {
-    state: State;
+    state: PlayerState;
     event: GameEvent;
 }
 
@@ -72,11 +82,11 @@ class PlayerSnapshot {
  * domain and image (?)
  */
 function round_robin<T>( arr: T[], round: (a: T, b: T) => void ) {
-    // const n = arr.length % 2 == 0 ? arr.length / 2 : (arr.length+1) / 2;
     const n = arr.length;
-    // const k = n % 2 == 0 ? (n-1)*(n/2) : n*((n-1)/2);
-    for( let i=0; i<n*n; i++ ) {
-        round(arr[i], arr[i+n]);
+    for( let i=0; i<n; i++ ) {
+        for( let j=i+1; j<n; j++ ) {
+            round(arr[i], arr[j]);
+        }
     }
 }
 
