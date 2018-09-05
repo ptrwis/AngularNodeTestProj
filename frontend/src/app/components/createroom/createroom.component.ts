@@ -108,6 +108,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     if ( this.dontSignalLeavingTheRoomInNgOnDestroy !== true ) {
       this.wss.call( new LeaveTheRoomMsg( this.roomid ) );
     }
+    console.log( 'leaving createroom' );
   }
 
   onStartGameButtonClick() {

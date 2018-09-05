@@ -33,7 +33,7 @@ export class SignInComponent implements OnInit, OnDestroy {
    * TODO: "onSignInButtonClick"
    * @param event
    */
-  handleSignIn(event: MouseEvent) { 
+  handleSignIn(event: MouseEvent) {
     this.authService.login(this.username, this.password,
       // ... after getting response (signing in went ok or not) route or show error
       (resp) => {
@@ -49,6 +49,18 @@ export class SignInComponent implements OnInit, OnDestroy {
     this.authService.logout();
     this.wss.disconnect();
     this.router.navigate(['./signin']);
+  }
+
+  signInAsAsdAsdHelper() {
+    this.authService.login('asd', 'asd',
+      // ... after getting response (signing in went ok or not) route or show error
+      (resp) => {
+        switch (resp.result) {
+          case Result.RESULT_OK: this.router.navigate(['./roomlist']); break;
+          case Result.RESULT_FAIL: alert('Login failed! :C'); break;
+        }
+      }
+    );
   }
 
 }

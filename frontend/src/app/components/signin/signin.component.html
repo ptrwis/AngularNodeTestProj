@@ -3,6 +3,7 @@
     <input type="text" pInputText [(ngModel)]="username" placeholder="asd">
     <input type="text" pInputText [(ngModel)]="password" placeholder="asd">
     <p-button label="Sign In" (onClick)="handleSignIn($event)"></p-button>
+    <p-button label="Asd/Asd" (onClick)="signInAsAsdAsdHelper()"></p-button>
 </div>
 
 <div *ngIf="authService.isAuth() == true" >
