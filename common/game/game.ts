@@ -43,40 +43,44 @@ export class PlayerState extends AbstractState {
 }
 export class SimplePlayer extends GameObject<PlayerState> {
 
-    e: GameEvent;
+    lastEvent: GameEvent;
+
+    velocity = 0.1; // szybkosc liniowa
+    w = 0.15; // szybkosc kolowa
+    radious = 50;
 
     constructor( ps: PlayerState, initialEvent: GameEvent ) {
         super();
         this.state = ps;
-        this.e = initialEvent;
+        this.lastEvent = initialEvent;
     }
 
     applyEvent( e: GameEvent ) {
         this.state = this.getCurrentState( e.time );
-        this.e = e;
+        this.lastEvent = e;
     }
 
     getCurrentState(time: number): PlayerState {
-        const dt = time - this.e.time;
-        const velocity = 0.1; // szybkosc liniowa
-        const w = 0.15; // szybkosc kolowa
-        const radious = 50;
+        const v = this.velocity;
+        const w = this.w;
+        const r = this.radious;
+        const dt = time - this.lastEvent.time;
         const pos = this.state.pos;
         const dir = this.state.dir;
-        switch (this.e.eventType) {
+        switch (this.lastEvent.eventType) {
             case GameEventType.STR8_FORWARD: {
                 // return p(t) = p0 + v * dir * t
-                const newPos = this.state.pos.add(this.state.dir.mul(velocity * dt));
+                const newPos = this.state.pos.add(this.state.dir.mul(v * dt));
                 return new PlayerState(newPos, this.state.dir);
             }
             case GameEventType.TURN_LEFT: {
-                const anchor = pos.sub( dir.normal().mul(radious) );
+                const anchor = pos.sub( dir.normal().mul(r) );
                 const newDir = this.state.dir.rotd(- w * dt);
                 const newPos = pos.rotdAround(- w * dt, anchor);
                 return new PlayerState(newPos, newDir);
             }
             case GameEventType.TURN_RIGHT: {
-                const anchor = pos.add( dir.normal().mul(radious) );
+                const anchor = pos.add( dir.normal().mul(r) );
                 const newDir = this.state.dir.rotd(+ w * dt);
                 const newPos = pos.rotdAround(+ w * dt, anchor);
                 return new PlayerState(newPos, newDir);

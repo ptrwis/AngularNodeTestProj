@@ -9,8 +9,13 @@ import { SimplePlayer, PlayerState, GameEvent, GameEventType } from '../../../..
   selector: 'gameplay',
   template:
   `<h3>GamePlay {{roomid}}</h3>
-  <h4>Click on the owls to make them flying!</h4>
 
+  <button (click)="resetPlayer()" >reset player</button>
+  <br />
+  <button (click)="clearScreen()" >clear</button>
+  <br />
+  <button (click)="onLeaveRoomButtonClick()" >Leave</button>
+  <br />
   <canvas #kanvas tabindex="1"
                   (keydown)="onKeyDown($event)"
                   (keyup)="onKeyUp($event)"
@@ -18,6 +23,8 @@ import { SimplePlayer, PlayerState, GameEvent, GameEventType } from '../../../..
                   (focus)="onFocus($event)" >
   </canvas>
 
+  <!--
+  <h4>Click on the owls to make them flying!</h4>
   <owl posx="70" posy="500"
        factorx="1.0" factory="0.5"
        rounds="2" ></owl>
@@ -34,8 +41,8 @@ import { SimplePlayer, PlayerState, GameEvent, GameEventType } from '../../../..
        factorx="1.0" factory="1.0"
        rounds="4" ></owl>
   <br /> <br /> <br /> <br />
-
-  <button (click)="onLeaveRoomButtonClick()" >Leave</button>`,
+  -->
+  `,
   styles: [`canvas { border: 1px solid black; }`]
 })
 export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
@@ -64,7 +71,10 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     });
     this.keysWhichArePressed = new Set();
     this.player = new SimplePlayer(
-      new PlayerState(new Vec2d(0, 0), new Vec2d(1, 0)),
+      new PlayerState(
+        new Vec2d(this.width/2, this.height/2), 
+        new Vec2d(1, 0)
+      ),
       new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
     );
   }
@@ -78,41 +88,86 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.canvas.height = this.height;
     // set some default properties about the line
     this.ctx.lineWidth = 2;
+    // this.ctx.shadowBlur = 20;
     // this.ctx.lineCap = 'round';
-    this.ctx.strokeStyle = '#FF0000';
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
+    this.clearScreen();
     this.drawOnCanvas();
   }
 
   private drawOnCanvas() {
-    const unixms = this.currentUnixTimeMs();
-    // incase the context is not set
-    if (!this.ctx) { return; }
-    // clear canvas
-    // this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // if (!this.ctx) { return; } // ?!
+    this.clearScreen();
+    this.drawPlayer( this.currentUnixTimeMs() );
+    if ( this.running ) {
+      requestAnimationFrame(this.drawOnCanvas.bind(this));
+    }
+  }
 
-    // change color with time
-    const r = Math.floor((Math.sin(unixms * 0.003) * 0.5 + 0.5) * 250);
-    const g = Math.floor((Math.cos(unixms * 0.006) * 0.5 + 0.5) * 250);
-    const b = Math.floor((Math.sin(unixms * 0.009) * 0.5 + 0.5) * 250);
-    const color = `rgb(${r}, ${g}, ${b})`;
-    this.ctx.strokeStyle = color;
-
-    const s = this.player.getCurrentState( unixms );
+  /**
+   * 
+   * @param pos world (x,y) are screen's (x,y)
+   */
+  drawCircleAt( pos: Vec2d ){
     this.ctx.beginPath();
     {
       this.ctx.arc(
-        s.pos.x + this.width / 2,
-        s.pos.y + this.height / 2,
+        pos.x, pos.y,
         5, // radious
         0, 2 * Math.PI // full circle
       );
     }
     this.ctx.stroke();
+  }
 
-    if ( this.running ) {
-      requestAnimationFrame(this.drawOnCanvas.bind(this));
+  /**
+   * 
+   */
+  clearScreen() {
+    this.ctx.strokeStyle = '#FF0000'; // TODO: as arg, prop
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  /**
+   * draw line or arc from st to s basing on e
+   */
+  drawPlayer( timestamp: number ) {
+    const old = this.player.state;
+    const cur = this.player.getCurrentState( timestamp );
+    const ev = this.player.lastEvent.eventType;
+    switch( ev ) {
+      // draw straight line
+      case GameEventType.STR8_FORWARD: {
+        this.ctx.beginPath();
+        {
+          this.ctx.moveTo( old.pos.x, old.pos.y);
+          this.ctx.lineTo( cur.pos.x, cur.pos.y);
+        }
+        this.ctx.stroke();
+        this.drawCircleAt( cur.pos );
+      } break;
+      // draw a bow
+      case GameEventType.TURN_RIGHT:
+      case GameEventType.TURN_LEFT:
+        // center of rotation
+        const center = 
+        ev == GameEventType.TURN_RIGHT ?
+        cur.pos.add( cur.dir.normal().mul( this.player.radious ) ) // turn right
+        :
+        cur.pos.sub( cur.dir.normal().mul( this.player.radious ) ); // turn left
+
+        this.ctx.beginPath();
+        {
+          this.ctx.arc(
+            center.x, center.y,
+            this.player.radious, // radious
+            old.pos.sub(center).angle(), // angle from
+            cur.pos.sub(center).angle(), // angle to
+            ev == GameEventType.TURN_RIGHT ? false : true // false=cw / true=ccw
+          );
+        }
+        this.ctx.stroke();
+        this.drawCircleAt( cur.pos );
+      break;
     }
   }
 
@@ -122,6 +177,16 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.wss.send( new LeaveTheRoomMsg(this.roomid) );
     this.running = false;
     console.log( 'leaving gameplay' );
+  }
+
+  resetPlayer() {
+    this.player = new SimplePlayer(
+      new PlayerState(
+        new Vec2d(this.width/2, this.height/2), 
+        new Vec2d(1, 0)
+      ),
+      new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
+    );
   }
 
   /**
@@ -170,11 +235,9 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   onKeyUp( e: KeyboardEvent ) {
     this.keysWhichArePressed.delete( e.code );
     const timestamp = this.currentUnixTimeMs();
-    switch ( e.code ) {
-      case 'ArrowLeft': this.player.applyEvent( new GameEvent(timestamp, GameEventType.STR8_FORWARD) ); break;
-      case 'ArrowRight': this.player.applyEvent( new GameEvent(timestamp, GameEventType.STR8_FORWARD) ); break;
-    }
-    // console.log( `${e.code} up` );
+    // a case when eg player pressed left, then right, then release left but still holding right
+    if( this.keysWhichArePressed.size === 0 )
+      this.player.applyEvent( new GameEvent(timestamp, GameEventType.STR8_FORWARD) );
   }
 
   onBlur( e: FocusEvent) {

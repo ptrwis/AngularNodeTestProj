@@ -1,1 +1,1 @@
-node_modules\.bin\ts-node.cmd myServer.ts 
+node_modules\.bin\ts-node.cmd GameServer.ts 
