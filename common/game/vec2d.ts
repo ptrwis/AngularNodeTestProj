@@ -45,15 +45,6 @@ export class Vec2d{
         return this.div( this.length());
     }
 
-    /**
-     * In case of rotation, we treat vector as a point.
-     * @param degrees 
-     */
-    rotd( degrees: number){
-        const rad = degrees * Math.PI / 180;
-        return this.rot( rad );
-    }
-
     rot( radians: number ){
         const cos = Math.cos(radians);
         const sin = Math.sin(radians);
@@ -65,10 +56,6 @@ export class Vec2d{
 
     rotAround( radians: number, anchor: Vec2d ) {
         return this.sub( anchor ).rot( radians ).add( anchor );
-    }
-
-    rotdAround( degrees: number, anchor: Vec2d ) {
-        return this.sub( anchor ).rotd( degrees ).add( anchor );
     }
 
 }

@@ -46,9 +46,10 @@ export class SimplePlayer extends GameObject<PlayerState> {
     lastEvent: GameEvent;
 
     velocity = 0.1; // szybkosc liniowa
-    w = 0.15; // szybkosc kolowa
     radious = 50;
-
+    // w = 2*Math.PI / 1000; // szybkosc kolowa, w rad/sec
+    w = this.velocity / this.radious;
+ 
     constructor( ps: PlayerState, initialEvent: GameEvent ) {
         super();
         this.state = ps;
@@ -63,26 +64,26 @@ export class SimplePlayer extends GameObject<PlayerState> {
     getCurrentState(time: number): PlayerState {
         const v = this.velocity;
         const w = this.w;
-        const r = this.radious;
         const dt = time - this.lastEvent.time;
         const pos = this.state.pos;
         const dir = this.state.dir;
+        const r = this.radious;
         switch (this.lastEvent.eventType) {
             case GameEventType.STR8_FORWARD: {
                 // return p(t) = p0 + v * dir * t
-                const newPos = this.state.pos.add(this.state.dir.mul(v * dt));
+                const newPos = pos.add(dir.mul(v * dt));
                 return new PlayerState(newPos, this.state.dir);
             }
             case GameEventType.TURN_LEFT: {
                 const anchor = this.centerOfRotation( GameEventType.TURN_LEFT );
-                const newDir = this.state.dir.rotd(- w * dt);
-                const newPos = pos.rotdAround(- w * dt, anchor);
+                const newPos = pos.rotAround( -w * dt, anchor);
+                const newDir = newPos.sub(anchor).normal().mul(-1);
                 return new PlayerState(newPos, newDir);
             }
             case GameEventType.TURN_RIGHT: {
                 const anchor = this.centerOfRotation( GameEventType.TURN_RIGHT );
-                const newDir = this.state.dir.rotd(+ w * dt);
-                const newPos = pos.rotdAround(+ w * dt, anchor);
+                const newPos = pos.rotAround( +w * dt, anchor);
+                const newDir = newPos.sub(anchor).normal().mul(+1);
                 return new PlayerState(newPos, newDir);
             }
         }

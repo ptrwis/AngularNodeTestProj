@@ -124,42 +124,42 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     const p = this.player;
     const old = p.state;
     const cur = this.player.getCurrentState( timestamp );
+    const dt = this.currentUnixTimeMs() - p.lastEvent.time;
 
     switch ( this.player.lastEvent.eventType ) {
 
       case GameEventType.STR8_FORWARD: {
         this.drawLine(old.pos, cur.pos);
+        this.drawCircleAt( cur.pos );
       } break;
 
       case GameEventType.TURN_RIGHT: {
-        const cw = true;
+        const cw = false;
         const center = p.centerOfRotation( GameEventType.TURN_RIGHT );
-        const angle = p.w * p.lastEvent.time;
-        this.drawArc( old.pos, center, angle, cw );
+        this.drawArc( old.pos, center, +p.w * dt, cw );
         this.drawCircleAt( cur.pos );
       } break;
 
       case GameEventType.TURN_LEFT: {
-        const cw = false;
+        const cw = true;
         const center = p.centerOfRotation( GameEventType.TURN_LEFT );
-        const angle = p.w * p.lastEvent.time;
-        this.drawArc( old.pos, center, angle, cw );
+        this.drawArc( old.pos, center, -p.w * dt, cw );
         this.drawCircleAt( cur.pos );
       } break;
 
     }
-    this.drawCircleAt( cur.pos );
   }
 
   drawArc( point: Vec2d, center: Vec2d, angle: number, cw: boolean ) {
     const angleStart = point.sub(center).angle();
+    const end = point.rotAround(angle, center);
     this.ctx.beginPath();
     {
       this.ctx.arc(
         center.x, center.y,
         this.player.radious, // radious
-        angleStart, // angle from
-        angleStart + angle, // angle to
+        point.sub(center).angle(), // angle from
+        end.sub(center).angle(), // angle to
         cw
       );
     }
@@ -244,11 +244,10 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
    */
   onKeyDown( e: KeyboardEvent ) {
     // escape key repetition
-    if ( this.keysWhichArePressed.has(e.code) ) {
+    if ( this.keysWhichArePressed.has(e.code) )
       return;
-    } else {
-      this.keysWhichArePressed.add(e.code);
-    }
+    this.keysWhichArePressed.add(e.code);
+
     const timestamp = this.currentUnixTimeMs();
     const gameEvent = this.keyboardMap.get(e.code);
     this.player.applyEvent( new GameEvent(timestamp, gameEvent ));

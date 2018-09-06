@@ -142,11 +142,12 @@ class ServerRoom {
  */
 class GameServer {
     roomsById: Map<number, ServerRoom>;
-    allPeers: Peer[]; // TODO: Set<Peer>
+    //allPeers: Peer[]; // TODO: Set<Peer>
+    allPeers: Set<Peer>;
 
     constructor() {
         this.roomsById = new Map();
-        this.allPeers = [];
+        this.allPeers = new Set();
     }
     /**
      * broadcast to this.allPeers
@@ -156,8 +157,11 @@ class GameServer {
      */
     broadcast(sender: Peer, msg: XBaseMsg, excludeSender: boolean) {
         const m = msgpack.encode(msg);
-        let receivingList = excludeSender === false ? this.allPeers : this.allPeers.filter((p) => p.user.id !== sender.user.id);
-        receivingList.forEach(peer => peer.justSend(m));
+        if( excludeSender==true ) {
+            this.allPeers.forEach( peer => peer!=sender ? peer.justSend(m) : null );
+        }else{
+            this.allPeers.forEach( peer => peer.justSend(m) );
+        }
     }
     /**
      * called after websocket disconnection
@@ -166,16 +170,18 @@ class GameServer {
     rageQuit(peer: Peer) {
         // here we assume peer can be in many rooms ( like in chat )
         // this.roomsById.forEach((room) => room.leave(peer)); // for games it sucks
-        console.log( `Rage Quit, peer ${peer.user.username}` );
-        peer.rooms.forEach((room) => this.route(peer, msgpack.encode( new LeaveTheRoomMsg(room.id) ) ));
-        this.allPeers = this.allPeers.filter( p => p.user.id !== peer.user.id );
+        console.log( `Rage Quit [${peer.user.username}] in ${peer.rooms.length} rooms` );
+        peer.rooms.forEach((room) => 
+            this.route(peer, msgpack.encode( new LeaveTheRoomMsg(room.id) ) )
+        );
+        this.allPeers.delete(peer);
     }
     /**
      * 
      * @param peer 
      */
     addPeer( peer: Peer ){
-        this.allPeers.push( peer );
+        this.allPeers.add( peer );
     }
     /**
      * 
@@ -201,43 +207,40 @@ class GameServer {
             } break;
             case MSG_TYPE.JOIN_ROOM: {
                 let request = baseMsg as JoinRoomMsg;
-                console.log( request );
                 this.runCallbackWithGuard( sender, request.roomid,
-                    (room: ServerRoom) => room.join(sender)
+                    (room: ServerRoom) => { 
+                        console.log( `[${sender.user.username}] joined [${room.roomname}]` );
+                        sender.join(room);
+                    }
                 );
             } break;
             case MSG_TYPE.LEAVE_THE_ROOM: {
                 let request = baseMsg as LeaveTheRoomMsg;
-                // console.log( request );
                 this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => {
                         // TODO: if owner left then choose new one from other peers in this room.
                         room.leave( sender ); 
+                        console.log( `[${sender.user.username}] left [${room.roomname}], which now has ${room.peers.length} peers` );
                         if( room.peers.length === 0 ) {
+                            console.log( `Removing [${room.roomname}]` );
                             this.roomsById.delete( room.id );
-                            return;
+                        }else{
+                            room.broadcast(
+                                sender, 
+                                new PeerLeftTheRoomMsg(sender.user.id, room.id), 
+                                true
+                            );
                         }
-                        room.broadcast(
-                            sender, 
-                            new PeerLeftTheRoomMsg(sender.user.id, room.id), 
-                            true
-                        );
                     }
                 );
             } break;
             case MSG_TYPE.CREATE_ROOM: {
                 let request = baseMsg as CreateRoomMsg;
-                // console.log( request );
-                // todo; check if not exists
-                let found = false;
-                /* if (found == true) {
-                    sender.send(new RoomCreatedResp(request, -1, Result.RESULT_FAIL, 'Server: Such room already exists!'));
-                    return;
-                } */
+                console.log( `[${sender.user.username}] created [${request.roomname}]` );
                 let newRoom = new ServerRoom(request.roomname);
                 this.roomsById.set(newRoom.id, newRoom); // weak- ugly
                 sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
-                newRoom.join( sender );
+                sender.join( newRoom );
                 // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
                 this.broadcast(
                     sender,
@@ -298,6 +301,8 @@ class GameServer {
                     ) 
                 );
             } break;
+            default:
+                console.log(`Nieznany typ wiadomosci ${baseMsg.type}`);
         }
     }
     /**
