@@ -1,7 +1,7 @@
 import { MSG_TYPE, Result } from "./msg_types";
 import { XRequest, XResponse } from "./generic";
-import { Player } from "./dto/player";
-import { Room } from "./dto/room";
+import { PlayerDTO } from "./dto/player_dto";
+import { RoomDTO } from "./dto/room_dto";
 
 export class GetRoomDetails extends XRequest<RoomDetailsResp>{
     constructor( public room_id: number ){
@@ -10,8 +10,8 @@ export class GetRoomDetails extends XRequest<RoomDetailsResp>{
 }
 
 export class RoomDetailsResp extends XResponse{
-    constructor( public room: Room,
-                 public players: Player[],
+    constructor( public room: RoomDTO,
+                 public players: PlayerDTO[],
                  req: GetRoomDetails,
                  result: Result,
                  err_msg?: string ) {

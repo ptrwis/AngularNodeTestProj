@@ -13,8 +13,8 @@ import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/pr
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
 import { GetRoomList, RoomList } from '../common/protocol/get_room_list';
-import { Room } from '../common/protocol/dto/room';
-import { Player } from '../common/protocol/dto/player';
+import { RoomDTO } from '../common/protocol/dto/room_dto';
+import { PlayerDTO } from '../common/protocol/dto/player_dto';
 import { GetRoomDetails, RoomDetailsResp } from '../common/protocol/get_room';
 
 
@@ -40,9 +40,9 @@ class UserDatabase {
 
     constructor() {
         this.userbase = [
-            new UserEntity(1, 'qwe', 'qwe'),
-            new UserEntity(2, 'asd', 'asd'),
-            new UserEntity(3, 'zxc', 'zxc'),
+            new UserEntity(1, 'John Rambo', 'qwe'),
+            new UserEntity(2, 'Billy Kid', 'asd'),
+            new UserEntity(3, 'Jimmy 11Fingerz', 'zxc'),
         ];
         const max = this.userbase.reduce((a, b) => a.id > b.id ? a : b);
         this.userIdSeq = max.id;
@@ -141,11 +141,11 @@ class ServerRoom {
  * 
  */
 class GameServer {
-    rooms: Map<number, ServerRoom>;
-    allPeers: Peer[];
+    roomsById: Map<number, ServerRoom>;
+    allPeers: Peer[]; // TODO: Set<Peer>
 
     constructor() {
-        this.rooms = new Map();
+        this.roomsById = new Map();
         this.allPeers = [];
     }
     /**
@@ -165,7 +165,9 @@ class GameServer {
      */
     rageQuit(peer: Peer) {
         // here we assume peer can be in many rooms ( like in chat )
-        this.rooms.forEach((room) => room.leave(peer)); // for games it sucks
+        // this.roomsById.forEach((room) => room.leave(peer)); // for games it sucks
+        console.log( `Rage Quit, peer ${peer.user.username}` );
+        peer.rooms.forEach((room) => this.route(peer, msgpack.encode( new LeaveTheRoomMsg(room.id) ) ));
         this.allPeers = this.allPeers.filter( p => p.user.id !== peer.user.id );
     }
     /**
@@ -212,7 +214,7 @@ class GameServer {
                         // TODO: if owner left then choose new one from other peers in this room.
                         room.leave( sender ); 
                         if( room.peers.length === 0 ) {
-                            this.rooms.delete( room.id );
+                            this.roomsById.delete( room.id );
                             return;
                         }
                         room.broadcast(
@@ -233,13 +235,13 @@ class GameServer {
                     return;
                 } */
                 let newRoom = new ServerRoom(request.roomname);
-                this.rooms.set(newRoom.id, newRoom); // weak- ugly
+                this.roomsById.set(newRoom.id, newRoom); // weak- ugly
                 sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
                 newRoom.join( sender );
                 // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
                 this.broadcast(
                     sender,
-                    new RoomHasBeenCreated( new Room( request.roomname, 1, newRoom.id)),
+                    new RoomHasBeenCreated( new RoomDTO( request.roomname, 1, newRoom.id)),
                     false
                 );
             } break;
@@ -269,17 +271,17 @@ class GameServer {
                 // TODO: Cache it, change when room is created or removed.
                 // There is problem with caching because response is msgpacked, but we have to hange id of response
                 // for every request (request.id==response.id). -> We can just send response as XEvent.
-                let rooms: Room[] = [];
-                this.rooms.forEach((v, k) => rooms.push(new Room(v.roomname, v.peers.length, k)));
+                let rooms: RoomDTO[] = [];
+                this.roomsById.forEach((v, k) => rooms.push(new RoomDTO(v.roomname, v.peers.length, k)));
                 sender.send( new RoomList(rooms, request) );
             } break;
             case MSG_TYPE.GET_ROOM_DETAILS: {
                 let request = baseMsg as GetRoomDetails;
-                let room = this.rooms.get( request.room_id );
+                let room = this.roomsById.get( request.room_id );
                 if( room === undefined ){
                     sender.send( 
                         new RoomDetailsResp( 
-                            new Room("",0,0), 
+                            new RoomDTO("",0,0), 
                             [], // empty array of players
                             request, 
                             Result.RESULT_FAIL, "No such room exists!"
@@ -289,8 +291,8 @@ class GameServer {
                 }
                 sender.send( 
                     new RoomDetailsResp( 
-                        new Room(room.roomname, room.peers.length, room.id), 
-                        room.peers.map( p => new Player(p.user.id, p.user.username) ),
+                        new RoomDTO(room.roomname, room.peers.length, room.id), 
+                        room.peers.map( p => new PlayerDTO(p.user.id, p.user.username) ),
                         request, 
                         Result.RESULT_OK
                     ) 
@@ -305,7 +307,7 @@ class GameServer {
      * @param callback 
      */
     runCallbackWithGuard(sender: Peer, roomid: number, callback: (room: ServerRoom) => void) {
-        let room = this.rooms.get(roomid);
+        let room = this.roomsById.get(roomid);
         if (room === undefined) {
             // sender.send(new ServerMsg(`Server: Such room does not exists!`));
         } else {
@@ -321,15 +323,15 @@ class GameServer {
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
-let myServer = new GameServer();
+let gameServer = new GameServer();
 
 wss.on('connection', (ws: WebSocket) => {
     // this works like closure- peer will be remembered
     let guestId = (- 1 - Math.floor(Math.random() * 100_000));
     let peer = new Peer(new UserEntity(guestId, "", ""), ws);
-    myServer.addPeer( peer );
-    ws.on('message', (message: Buffer) => myServer.route(peer, message));
-    ws.on('close', () => myServer.rageQuit(peer));
+    gameServer.addPeer( peer );
+    ws.on('message', (message: Buffer) => gameServer.route(peer, message));
+    ws.on('close', () => gameServer.rageQuit(peer));
 });
 
 // start

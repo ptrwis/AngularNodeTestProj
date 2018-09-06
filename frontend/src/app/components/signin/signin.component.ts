@@ -51,8 +51,8 @@ export class SignInComponent implements OnInit, OnDestroy {
     this.router.navigate(['./signin']);
   }
 
-  signInAsAsdAsdHelper() {
-    this.authService.login('asd', 'asd',
+  signInAs( username: string, password: string ) {
+    this.authService.login( username, password,
       // ... after getting response (signing in went ok or not) route or show error
       (resp) => {
         switch (resp.result) {

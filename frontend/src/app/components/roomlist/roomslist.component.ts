@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { GetRoomList, RoomList } from '../../../../../common/protocol/get_room_list';
 import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
 import { Result, EVENT_TYPE } from '../../../../../common/protocol/msg_types';
-import { Room } from '../../../../../common/protocol/dto/room';
+import { RoomDTO } from '../../../../../common/protocol/dto/room_dto';
 import { AuthService } from '../../services/auth.service';
 import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
 import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
@@ -39,8 +39,8 @@ import { WebsocketService } from '../../services/webosocket.service';
 })
 export class RoomlistComponent implements OnInit {
 
-  rooms: Room[];
-  selectedRoom: Room;
+  rooms: RoomDTO[];
+  selectedRoom: RoomDTO;
 
   constructor(
     private authService: AuthService,
@@ -60,7 +60,7 @@ export class RoomlistComponent implements OnInit {
     this.wss.subscribeOnMessage(
       EVENT_TYPE.ROOM_HAS_BEEN_CREATED,
       (msg: RoomHasBeenCreated) =>
-        this.rooms = [ new Room(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
+        this.rooms = [ new RoomDTO(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
     );
   }
 

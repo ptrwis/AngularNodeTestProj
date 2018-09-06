@@ -64,6 +64,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   keysWhichArePressed: Set<string>;
   player: SimplePlayer;
   running = true; // to request next animation frame or not
+  keyboardMap: Map <string, GameEventType>;
 
   public ngOnInit() {
     this.sub = this.route.params.subscribe(params => {
@@ -76,6 +77,9 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
         new Vec2d(1, 0)
       ),
       new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
+    );
+    this.keyboardMap = new Map(
+
     );
   }
 
@@ -217,6 +221,11 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.router.navigate( ['./roomlist'] );
   }
 
+  /**
+   * TODO: this.keyboardMap
+   * TODO2: translate onKeyUp to onKeyDown, move logic of both to the game, eg. onKeyUp -> game.goForward()
+   * @param e
+   */
   onKeyDown( e: KeyboardEvent ) {
     // escape key repetition
     if ( this.keysWhichArePressed.has(e.code) ) {
@@ -240,11 +249,19 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
       this.player.applyEvent( new GameEvent(timestamp, GameEventType.STR8_FORWARD) );
     } else {
       // eg player pressed 'left', then 'right', then released 'right' but still holding 'left' - we have to (re)submit 'left' again
-      // TODO: maybe resubmit the last one pressed
-      console.log( `resubmitting ${this.keysWhichArePressed.values().next().value}` );
-      switch ( this.keysWhichArePressed.values().next().value ) {
-        case 'ArrowLeft': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_LEFT) ); break;
-        case 'ArrowRight': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_RIGHT) ); break;
+      // TODO: maybe resubmit the last one pressed, here it is random one, but in case of this game it's enough
+      const keyStillBeingPressed = this.keysWhichArePressed.values().next().value;
+      switch ( keyStillBeingPressed ) {
+        case 'ArrowLeft':
+          if ( this.player.lastEvent.eventType !== GameEventType.TURN_LEFT ) {
+            this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_LEFT) );
+          }
+          break;
+        case 'ArrowRight':
+          if ( this.player.lastEvent.eventType !== GameEventType.TURN_RIGHT ) {
+            this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_RIGHT) );
+          }
+          break;
       }
     }
   }

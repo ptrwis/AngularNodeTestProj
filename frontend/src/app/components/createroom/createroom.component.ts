@@ -4,7 +4,7 @@ import { GetRoomDetails, RoomDetailsResp } from '../../../../../common/protocol/
 import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../../../../../common/protocol/leave_room';
 import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
-import { Player } from '../../../../../common/protocol/dto/player';
+import { PlayerDTO } from '../../../../../common/protocol/dto/player_dto';
 import { EVENT_TYPE } from '../../../../../common/protocol/msg_types';
 import { WebsocketService, EventSubscription } from '../../services/webosocket.service';
 
@@ -42,7 +42,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   roomname: string;
   private routeParamsSub: any; // subscription to route's parameters change
 
-  private players: Player[];
+  private players: PlayerDTO[];
   private chatMsgs: string[];
   private chatInput: string;
 
@@ -79,7 +79,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
       );
       this.peerJoinedTheRoomMsgSub = this.wss.subscribeOnMessage(
         EVENT_TYPE.PEER_JOINED_THE_ROOM,
-        (msg: PeerJoinedTheRoomMsg) => this.players = [ new Player(msg.peerid, msg.peername), ... this.players ]
+        (msg: PeerJoinedTheRoomMsg) => this.players = [ new PlayerDTO(msg.peerid, msg.peername), ... this.players ]
       );
       this.peerLeftTheRoomSub = this.wss.subscribeOnMessage(
         EVENT_TYPE.PEER_LEFT_THE_ROOM,
