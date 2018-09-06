@@ -74,17 +74,28 @@ export class SimplePlayer extends GameObject<PlayerState> {
                 return new PlayerState(newPos, this.state.dir);
             }
             case GameEventType.TURN_LEFT: {
-                const anchor = pos.sub( dir.normal().mul(r) );
+                const anchor = this.centerOfRotation( GameEventType.TURN_LEFT );
                 const newDir = this.state.dir.rotd(- w * dt);
                 const newPos = pos.rotdAround(- w * dt, anchor);
                 return new PlayerState(newPos, newDir);
             }
             case GameEventType.TURN_RIGHT: {
-                const anchor = pos.add( dir.normal().mul(r) );
+                const anchor = this.centerOfRotation( GameEventType.TURN_RIGHT );
                 const newDir = this.state.dir.rotd(+ w * dt);
                 const newPos = pos.rotdAround(+ w * dt, anchor);
                 return new PlayerState(newPos, newDir);
             }
         }
     }
+
+    centerOfRotation( ev: GameEventType ) {
+        const r = this.radious;
+        const pos = this.state.pos;
+        const dir = this.state.dir;
+        switch( ev ){
+            case GameEventType.TURN_LEFT: return pos.sub( dir.normal().mul(r) );
+            case GameEventType.TURN_RIGHT: return pos.add( dir.normal().mul(r) );
+        }
+    }
+
 }
