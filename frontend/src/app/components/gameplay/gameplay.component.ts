@@ -72,7 +72,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.keysWhichArePressed = new Set();
     this.player = new SimplePlayer(
       new PlayerState(
-        new Vec2d(this.width/2, this.height/2), 
+        new Vec2d(this.width / 2, this.height / 2),
         new Vec2d(1, 0)
       ),
       new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
@@ -104,10 +104,10 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   /**
-   * 
+   *
    * @param pos world (x,y) are screen's (x,y)
    */
-  drawCircleAt( pos: Vec2d ){
+  drawCircleAt( pos: Vec2d ) {
     this.ctx.beginPath();
     {
       this.ctx.arc(
@@ -120,7 +120,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   /**
-   * 
+   *
    */
   clearScreen() {
     this.ctx.strokeStyle = '#FF0000'; // TODO: as arg, prop
@@ -134,7 +134,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     const old = this.player.state;
     const cur = this.player.getCurrentState( timestamp );
     const ev = this.player.lastEvent.eventType;
-    switch( ev ) {
+    switch ( ev ) {
       // draw straight line
       case GameEventType.STR8_FORWARD: {
         this.ctx.beginPath();
@@ -149,8 +149,8 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
       case GameEventType.TURN_RIGHT:
       case GameEventType.TURN_LEFT:
         // center of rotation
-        const center = 
-        ev == GameEventType.TURN_RIGHT ?
+        const center =
+        ev === GameEventType.TURN_RIGHT ?
         cur.pos.add( cur.dir.normal().mul( this.player.radious ) ) // turn right
         :
         cur.pos.sub( cur.dir.normal().mul( this.player.radious ) ); // turn left
@@ -162,7 +162,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
             this.player.radious, // radious
             old.pos.sub(center).angle(), // angle from
             cur.pos.sub(center).angle(), // angle to
-            ev == GameEventType.TURN_RIGHT ? false : true // false=cw / true=ccw
+            ev === GameEventType.TURN_RIGHT ? false : true // false=cw / true=ccw
           );
         }
         this.ctx.stroke();
@@ -182,7 +182,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   resetPlayer() {
     this.player = new SimplePlayer(
       new PlayerState(
-        new Vec2d(this.width/2, this.height/2), 
+        new Vec2d(this.width / 2, this.height / 2),
         new Vec2d(1, 0)
       ),
       new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
@@ -222,7 +222,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     if ( this.keysWhichArePressed.has(e.code) ) {
       return;
     } else {
-      this.keysWhichArePressed.add( e.code );
+      this.keysWhichArePressed.add(e.code);
     }
     const timestamp = this.currentUnixTimeMs();
     switch ( e.code ) {
@@ -235,9 +235,18 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   onKeyUp( e: KeyboardEvent ) {
     this.keysWhichArePressed.delete( e.code );
     const timestamp = this.currentUnixTimeMs();
-    // a case when eg player pressed left, then right, then release left but still holding right
-    if( this.keysWhichArePressed.size === 0 )
+    // a case when eg player pressed 'left', then 'right', then released 'left' but still holding 'right'
+    if ( this.keysWhichArePressed.size === 0 ) {
       this.player.applyEvent( new GameEvent(timestamp, GameEventType.STR8_FORWARD) );
+    } else {
+      // eg player pressed 'left', then 'right', then released 'right' but still holding 'left' - we have to (re)submit 'left' again
+      // TODO: maybe resubmit the last one pressed
+      console.log( `resubmitting ${this.keysWhichArePressed.values().next().value}` );
+      switch ( this.keysWhichArePressed.values().next().value ) {
+        case 'ArrowLeft': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_LEFT) ); break;
+        case 'ArrowRight': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_RIGHT) ); break;
+      }
+    }
   }
 
   onBlur( e: FocusEvent) {
