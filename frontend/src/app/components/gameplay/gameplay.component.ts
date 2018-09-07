@@ -11,10 +11,7 @@ import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
   `<h3>GamePlay {{roomid}}</h3>
 
   <button (click)="resetPlayer()" >reset player</button>
-  <br />
-  <button (click)="clearScreen()" >clear</button>
-  <br />
-  <button (click)="onLeaveRoomButtonClick()" >Leave</button>
+  <button (click)="onLeaveRoomButtonClick()" >Quit</button>
   <br />
   <canvas #kanvas tabindex="1"
                   (keydown)="onKeyDown($event)"
@@ -250,6 +247,8 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     }
     this.keysWhichArePressed.add(e.code);
 
+    // clickCounter.inc();
+
     const timestamp = this.currentUnixTimeMs();
     const gameEvent = this.keyboardMap.get(e.code);
     this.player.applyEvent( new GameEvent(timestamp, gameEvent ));
@@ -261,6 +260,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   onKeyUp( e: KeyboardEvent ) {
+    // clickCounter.inc();
     this.keysWhichArePressed.delete( e.code );
     const timestamp = this.currentUnixTimeMs();
     // a case when eg player pressed 'left', then 'right', then released 'left' but still holding 'right'
