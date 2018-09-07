@@ -1,7 +1,7 @@
 import { MSG_TYPE, EVENT_TYPE } from "./msg_types";
-import { XRequest, XEvent, VoidResponse } from "./generic";
+import { XEvent, XCmd } from "./generic";
 
-export class LeaveTheRoomMsg extends XRequest<VoidResponse> {
+export class LeaveTheRoomCmd extends XCmd {
     roomid: number;
     constructor( roomid: number){
         super( MSG_TYPE.LEAVE_THE_ROOM);
@@ -9,6 +9,9 @@ export class LeaveTheRoomMsg extends XRequest<VoidResponse> {
     }
 }
 
+/**
+ * TODO: decide on "event" or "message"
+ */
 export class PeerLeftTheRoomMsg extends XEvent {
     peerid: number;
     roomid: number;

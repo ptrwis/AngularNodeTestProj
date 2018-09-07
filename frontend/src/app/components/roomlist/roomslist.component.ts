@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { GetRoomList, RoomList } from '../../../../../common/protocol/get_room_list';
-import { CreateRoomMsg, RoomCreatedResp } from '../../../../../common/protocol/create_room';
+import { GetRoomListReq, RoomListResp } from '../../../../../common/protocol/get_room_list';
+import { CreateRoomReq, RoomCreatedResp } from '../../../../../common/protocol/create_room';
 import { Result, EVENT_TYPE } from '../../../../../common/protocol/msg_types';
 import { RoomDTO } from '../../../../../common/protocol/dto/room_dto';
 import { AuthService } from '../../services/auth.service';
-import { RoomHasBeenCreated } from '../../../../../common/protocol/create_room';
-import { JoinRoomMsg } from '../../../../../common/protocol/join_room';
+import { RoomCreatedEvent } from '../../../../../common/protocol/create_room';
+import { JoinRoomReq, JoinRoomResp } from '../../../../../common/protocol/join_room';
 import { WebsocketService } from '../../services/webosocket.service';
 
 @Component({
@@ -50,8 +50,8 @@ export class RoomlistComponent implements OnInit {
 
   refresh() {
     this.wss.call(
-      new GetRoomList(),
-      (rl: RoomList) => this.rooms = rl.rooms
+      new GetRoomListReq(),
+      (rl: RoomListResp) => this.rooms = rl.rooms
     );
   }
 
@@ -59,16 +59,22 @@ export class RoomlistComponent implements OnInit {
     this.refresh();
     this.wss.subscribeOnMessage(
       EVENT_TYPE.ROOM_HAS_BEEN_CREATED,
-      (msg: RoomHasBeenCreated) =>
+      (msg: RoomCreatedEvent) =>
         this.rooms = [ new RoomDTO(msg.room.name, msg.room.num_of_players, msg.room.id ), ... this.rooms ]
     );
   }
 
   onRowSelect(event) {
     console.log( `navigate to ${this.selectedRoom.id}` );
-    this.wss.send(
-      new JoinRoomMsg( this.selectedRoom.id ),
-      () => this.router.navigate( ['./createroom', +event.data.id] ) // call after sending
+    this.wss.call(
+      new JoinRoomReq( this.selectedRoom.id ),
+      (resp: JoinRoomResp) => {
+        if (resp.result === Result.RESULT_OK) {
+          this.router.navigate( ['./createroom', +event.data.id] );
+        } else {
+          alert( resp.errormsg );
+        }
+      }
     );
   }
 
@@ -78,11 +84,11 @@ export class RoomlistComponent implements OnInit {
 
   onCreateRoomButtonClick() {
     this.wss.call(
-      new CreateRoomMsg( `${this.authService.username}'s room` ), // TODO: + user_id / owner_id
+      new CreateRoomReq( `${this.authService.username}'s room` ), // TODO: + user_id / owner_id
       (resp: RoomCreatedResp) => {
         switch ( resp.result ) {
           case Result.RESULT_OK:
-            this.router.navigate( ['./createroom', +resp.roomid] );
+            this.router.navigate( ['./createroom', +resp.room_id] );
           break;
           case Result.RESULT_FAIL:
             alert( resp.errormsg );

@@ -1,27 +1,25 @@
-import { XRequest, XBaseMsg, VoidResponse, XEvent, XResponse } from "./generic";
+import { XRequest, XEvent, XResponse } from "./generic";
 import { MSG_TYPE, Result, EVENT_TYPE } from "./msg_types";
 import { RoomDTO } from "./dto/room_dto";
 
-export class CreateRoomMsg extends XRequest<RoomCreatedResp> {
-    roomname: string;
-    constructor( roomname: string){
+export class CreateRoomReq extends XRequest<RoomCreatedResp> {
+    constructor( public roomname: string){
         super( MSG_TYPE.CREATE_ROOM);
-        this.roomname = roomname;
     }
 }
 
 export class RoomCreatedResp extends XResponse{
     constructor(
-        req: CreateRoomMsg,
-        public roomid: number,
+        req: CreateRoomReq,
         result: Result,
+        public room_id? : number,
         error_msg?: string
     ){
         super( req, result, error_msg );
     }
 }
 
-export class RoomHasBeenCreated extends XEvent {
+export class RoomCreatedEvent extends XEvent {
     constructor( public room: RoomDTO ){
         super( EVENT_TYPE.ROOM_HAS_BEEN_CREATED );
     }

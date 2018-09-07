@@ -1,7 +1,11 @@
-import { MSG_TYPE, EVENT_TYPE } from "./msg_types";
-import { XRequest, XEvent, VoidResponse } from "./generic";
+import { MSG_TYPE, EVENT_TYPE, Result } from "./msg_types";
+import { XEvent, XCmd, XRequest, XResponse } from "./generic";
+import { PlayerDTO } from "./dto/player_dto";
 
-export class JoinRoomMsg extends XRequest<VoidResponse> {
+/**
+ * TODO: FFS turn it into RPC
+ */
+export class JoinRoomReq extends XRequest<JoinRoomResp> {
     roomid: number;
     constructor( roomid: number){
         super( MSG_TYPE.JOIN_ROOM);
@@ -9,6 +13,19 @@ export class JoinRoomMsg extends XRequest<VoidResponse> {
     }
 }
 
+export class JoinRoomResp extends XResponse {
+    constructor(
+        public players: PlayerDTO[],
+        req: JoinRoomReq,
+        result: Result,
+        err_msg?: string ) {
+            super( req, result, err_msg );
+        }
+}
+
+/**
+ * Other player joined the room
+ */
 export class PeerJoinedTheRoomMsg extends XEvent {
     peerid: number;
     peername: string;

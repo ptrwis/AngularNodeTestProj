@@ -1,7 +1,7 @@
 import { MSG_TYPE, EVENT_TYPE } from "./msg_types";
-import { XEvent, VoidResponse, XRequest } from "./generic";
+import { XEvent, XCmd } from "./generic";
 
-export class ChatMsg extends XRequest<VoidResponse> {
+export class ChatMsg extends XCmd {
     constructor( public msg: string, 
                  public roomid: number){
         super( MSG_TYPE.CHAT_MSG);

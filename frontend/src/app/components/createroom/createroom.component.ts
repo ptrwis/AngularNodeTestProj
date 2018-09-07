@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { GetRoomDetails, RoomDetailsResp } from '../../../../../common/protocol/get_room';
-import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../../../../../common/protocol/leave_room';
+import { GetRoomDetailsReq, RoomDetailsResp } from '../../../../../common/protocol/get_room';
+import { LeaveTheRoomCmd, PeerLeftTheRoomMsg } from '../../../../../common/protocol/leave_room';
 import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
 import { PlayerDTO } from '../../../../../common/protocol/dto/player_dto';
@@ -71,7 +71,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     this.routeParamsSub = this.route.params.subscribe(params => {
       this.roomid = +params['id']; // (+) converts string 'id' to a number
       this.wss.call(
-        new GetRoomDetails(this.roomid),
+        new GetRoomDetailsReq(this.roomid),
         (resp: RoomDetailsResp) => {
           this.roomname = resp.room.name;
           this.players = resp.players;
@@ -106,7 +106,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     this.wss.unsubscribeFromMessage( this.chatEventSub );
     // look at this.onStartGameButtonClick()
     if ( this.dontSignalLeavingTheRoomInNgOnDestroy !== true ) {
-      this.wss.call( new LeaveTheRoomMsg( this.roomid ) );
+      this.wss.send( new LeaveTheRoomCmd( this.roomid ) );
     }
     console.log( 'leaving createroom' );
   }
@@ -122,7 +122,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   }
 
   sendChatMsg() {
-    this.wss.call( new ChatMsg( this.chatInput, this.roomid ) );
+    this.wss.send( new ChatMsg( this.chatInput, this.roomid ) );
     this.chatInput = '';
   }
 

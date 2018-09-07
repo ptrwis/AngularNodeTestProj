@@ -21,7 +21,7 @@ export class BaseMsg{
 /**
  * It's only interface
  */
-export class XBaseMsg{
+export abstract class XBaseMsg{
     constructor( public type: MSG_TYPE ){ }
 }
 
@@ -70,6 +70,17 @@ export abstract class XEvent extends XBaseMsg{
  * it is caller's responsibility to not
  * pass listener when there is no reponse
  */
-export class VoidResponse extends XResponse{
+/*export class VoidResponse extends XResponse{
 
+}*/
+
+/**
+ * XCmd is a message without response.
+ * This is in particular for send() method of WebsocketService.
+ * Not-abstract XBaseMsg could also be used, but let's introduce some hierarchy.
+ */
+export class XCmd extends XBaseMsg{
+    constructor( type: MSG_TYPE){
+        super( type );
+    }
 }

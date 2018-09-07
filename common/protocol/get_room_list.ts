@@ -3,15 +3,15 @@ import { XBaseMsg, XRequest, XResponse } from "./generic";
 import { RoomDTO } from "./dto/room_dto";
 
 
-export class GetRoomList extends XRequest<RoomList>{
+export class GetRoomListReq extends XRequest<RoomListResp>{
     constructor( ){
         super( MSG_TYPE.GET_ROOM_LIST );
     }
 }
 
-export class RoomList extends XResponse{
+export class RoomListResp extends XResponse{
     constructor( public rooms: RoomDTO[],
-                 req: GetRoomList ) {
+                 req: GetRoomListReq ) {
         super( req, Result.RESULT_OK );
     }
 }

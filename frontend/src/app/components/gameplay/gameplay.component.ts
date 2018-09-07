@@ -1,9 +1,9 @@
 import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { LeaveTheRoomMsg } from '../../../../../common/protocol/leave_room';
 import { WebsocketService } from '../../services/webosocket.service';
 import { SimplePlayer, PlayerState, GameEvent, GameEventType } from '../../../../../common/game/game';
+import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 
 @Component({
   selector: 'gameplay',
@@ -91,16 +91,19 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     // set the width and height
     this.canvas.width = this.width;
     this.canvas.height = this.height;
-    // set some default properties about the line
+    this.ctx.fillStyle = '#000000';
+    this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 2;
-    // this.ctx.shadowBlur = 20;
+    this.ctx.shadowColor = '#FFFF00';
+    this.ctx.shadowBlur = 5;
+    // this.ctx.shadowOffsetX = 10;
     // this.ctx.lineCap = 'round';
     this.clearScreen();
     this.drawOnCanvas();
   }
 
   private drawOnCanvas() {
-    // if (!this.ctx) { return; } // ?!
+    const timestamp = this.currentUnixTimeMs();
     this.clearScreen();
     this.drawPlayer( this.currentUnixTimeMs() );
     if ( this.running ) {
@@ -112,7 +115,6 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
    *
    */
   clearScreen() {
-    this.ctx.strokeStyle = '#FF0000'; // TODO: as arg, prop
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
@@ -152,14 +154,13 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
 
   drawArc( point: Vec2d, center: Vec2d, angle: number, cw: boolean ) {
     const angleStart = point.sub(center).angle();
-    const end = point.rotAround(angle, center);
+    const angleEnd = angleStart + angle;
     this.ctx.beginPath();
     {
       this.ctx.arc(
         center.x, center.y,
         this.player.radious, // radious
-        point.sub(center).angle(), // angle from
-        end.sub(center).angle(), // angle to
+        angleStart, angleEnd,
         cw
       );
     }
@@ -194,7 +195,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   ngOnDestroy() {
     // subscription is in ngOnInit
     this.sub.unsubscribe();
-    this.wss.send( new LeaveTheRoomMsg(this.roomid) );
+    this.wss.send( new LeaveTheRoomCmd(this.roomid) );
     this.running = false;
     console.log( 'leaving gameplay' );
   }
@@ -244,8 +245,9 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
    */
   onKeyDown( e: KeyboardEvent ) {
     // escape key repetition
-    if ( this.keysWhichArePressed.has(e.code) )
+    if ( this.keysWhichArePressed.has(e.code) ) {
       return;
+    }
     this.keysWhichArePressed.add(e.code);
 
     const timestamp = this.currentUnixTimeMs();

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, EVENT_TYPE } from '../../../../common/protocol/msg_types';
-import { XBaseMsg, XResponse, XEvent, XRequest } from '../../../../common/protocol/generic';
+import { XBaseMsg, XResponse, XEvent, XRequest, XCmd } from '../../../../common/protocol/generic';
 import { EventEmitter } from 'events';
 
 /**
@@ -116,7 +116,7 @@ export class WebsocketService {
    * @param onSentListener
    * @returns value returned by onSentListener
    */
-  send(ev: XBaseMsg, onSentListener?: () => any) {
+  send(ev: XCmd, onSentListener?: () => any) {
     return this.encodeAndSend(ev, onSentListener);
   }
 
@@ -130,7 +130,6 @@ export class WebsocketService {
    * corresponding Response. This way without being explicit compiler
    * should figure out what is the type of response basing on the type
    * of request.
-   * TODO: for sending without response we have this()
    * @param req - request
    * @param onResponseListener - called when response arrives
    * @param onSentListener - called right after sending message
@@ -139,7 +138,7 @@ export class WebsocketService {
     <T extends XRequest<K>, K extends XResponse>
     (
       req: T,
-      onResponseListener?: (response: K) => any,
+      onResponseListener: (response: K) => any,
       onSentListener?: () => any,
     ): void {
     // send request through websocket

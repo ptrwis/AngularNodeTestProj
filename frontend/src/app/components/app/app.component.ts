@@ -1,4 +1,4 @@
-import { AddTwoNumbers, AddResult } from '../../../../../common/protocol/addition';
+import { AddTwoNumbersReq, AddResultResp } from '../../../../../common/protocol/addition';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -37,8 +37,8 @@ export class AppComponent implements OnInit {
     const a = Math.floor(Math.random() * 10);
     const b = Math.floor(Math.random() * 10);
     this.wss.call(
-      new AddTwoNumbers(a, b),
-      (msg: AddResult) => {
+      new AddTwoNumbersReq(a, b),
+      (msg: AddResultResp) => {
         console.log( msg.result);
         this.rpcResp = `${a} + ${b} = ${msg.result.toString()}`;
       }

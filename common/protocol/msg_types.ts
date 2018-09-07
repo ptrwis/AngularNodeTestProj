@@ -22,6 +22,7 @@ export enum MSG_TYPE
     ADD,
     GET_ROOM_DETAILS,
 
+    GAME_ACTION,
     // response
     // one type for all responses, client will know the type because 
     // he knows the type of request
@@ -45,4 +46,10 @@ export enum EVENT_TYPE
 export enum Result{
     RESULT_OK,
     RESULT_FAIL
+}
+
+// TODO: move it to Game.ts ?
+export enum GAME_EVENT{
+    TURN_LEFT,
+    TURN_RIGHT
 }

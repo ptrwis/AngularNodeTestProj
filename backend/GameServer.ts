@@ -1,21 +1,21 @@
-import { AddTwoNumbers, AddResult } from './../common/protocol/addition';
+import { AddTwoNumbersReq, AddResultResp } from './../common/protocol/addition';
 import express from 'express';
 import * as http from 'http';
 import * as WebSocket from 'ws';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, Result } from '../common/protocol/msg_types';
-import { XBaseMsg, XRequest } from '../common/protocol/generic';
-import { PeerJoinedTheRoomMsg, JoinRoomMsg } from '../common/protocol/join_room';
-import { LeaveTheRoomMsg, PeerLeftTheRoomMsg } from '../common/protocol/leave_room';
+import { XBaseMsg, XRequest, XCmd } from '../common/protocol/generic';
+import { PeerJoinedTheRoomMsg, JoinRoomReq, JoinRoomResp } from '../common/protocol/join_room';
+import { LeaveTheRoomCmd, PeerLeftTheRoomMsg } from '../common/protocol/leave_room';
 import { ChatEvent, ChatMsg } from '../common/protocol/chat';
 // import { ServerMsg } from '../common/protocol/server_msg';
-import { CreateRoomMsg, RoomHasBeenCreated, RoomCreatedResp } from '../common/protocol/create_room';
+import { CreateRoomReq, RoomCreatedResp, RoomCreatedEvent } from '../common/protocol/create_room';
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
-import { GetRoomList, RoomList } from '../common/protocol/get_room_list';
+import { GetRoomListReq, RoomListResp } from '../common/protocol/get_room_list';
 import { RoomDTO } from '../common/protocol/dto/room_dto';
 import { PlayerDTO } from '../common/protocol/dto/player_dto';
-import { GetRoomDetails, RoomDetailsResp } from '../common/protocol/get_room';
+import { GetRoomDetailsReq, RoomDetailsResp } from '../common/protocol/get_room';
 
 
 /**
@@ -172,7 +172,7 @@ class GameServer {
         // this.roomsById.forEach((room) => room.leave(peer)); // for games it sucks
         console.log( `Rage Quit [${peer.user.username}] in ${peer.rooms.length} rooms` );
         peer.rooms.forEach((room) => 
-            this.route(peer, msgpack.encode( new LeaveTheRoomMsg(room.id) ) )
+            this.route(peer, msgpack.encode( new LeaveTheRoomCmd(room.id) ) )
         );
         this.allPeers.delete(peer);
     }
@@ -191,7 +191,10 @@ class GameServer {
     route(sender: Peer, message: Buffer) {
         // we have to parse it here, to forward message to apporpriate room
         // let baseMsg = JSON.parse(message) as BaseMsg; // JSON string
-        let baseMsg = msgpack.decode( message ) as XRequest<any>;
+
+        //let baseMsg = msgpack.decode( message ) as XRequest<any>;
+        let baseMsg = msgpack.decode( message ) as XRequest<any>|XCmd; // effectively XBaseMsg;
+
         // TODO: safe casting (we can immidiatelly drop user and ban him on exception)
         // TODO: check if user is singed in
         switch (baseMsg.type) {
@@ -206,16 +209,18 @@ class GameServer {
                 );
             } break;
             case MSG_TYPE.JOIN_ROOM: {
-                let request = baseMsg as JoinRoomMsg;
+                let request = baseMsg as JoinRoomReq;
                 this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => { 
                         console.log( `[${sender.user.username}] joined [${room.roomname}]` );
+                        const peers_dtos = room.peers.map(peer => new PlayerDTO(peer.user.id,peer.user.username));
+                        sender.send( new JoinRoomResp( peers_dtos, request, Result.RESULT_OK) );
                         sender.join(room);
                     }
                 );
             } break;
             case MSG_TYPE.LEAVE_THE_ROOM: {
-                let request = baseMsg as LeaveTheRoomMsg;
+                let request = baseMsg as LeaveTheRoomCmd;
                 this.runCallbackWithGuard( sender, request.roomid,
                     (room: ServerRoom) => {
                         // TODO: if owner left then choose new one from other peers in this room.
@@ -235,16 +240,16 @@ class GameServer {
                 );
             } break;
             case MSG_TYPE.CREATE_ROOM: {
-                let request = baseMsg as CreateRoomMsg;
+                let request = baseMsg as CreateRoomReq;
                 console.log( `[${sender.user.username}] created [${request.roomname}]` );
                 let newRoom = new ServerRoom(request.roomname);
                 this.roomsById.set(newRoom.id, newRoom); // weak- ugly
-                sender.send(new RoomCreatedResp(request, newRoom.id, Result.RESULT_OK));
+                sender.send(new RoomCreatedResp(request, Result.RESULT_OK, newRoom.id));
                 sender.join( newRoom );
                 // For each player in idle send info (event) about new room. Otherwise just force players to click "refresh"
                 this.broadcast(
                     sender,
-                    new RoomHasBeenCreated( new RoomDTO( request.roomname, 1, newRoom.id)),
+                    new RoomCreatedEvent( new RoomDTO( request.roomname, 1, newRoom.id)),
                     false
                 );
             } break;
@@ -266,20 +271,20 @@ class GameServer {
                 sender.send(new SignUpResp(request, Result.RESULT_OK));
             } break;
             case MSG_TYPE.ADD: {
-                let request = baseMsg as AddTwoNumbers;
-                sender.send(new AddResult(request));
+                let request = baseMsg as AddTwoNumbersReq;
+                sender.send(new AddResultResp(request));
             } break;
             case MSG_TYPE.GET_ROOM_LIST: {
-                let request = baseMsg as GetRoomList;
+                let request = baseMsg as GetRoomListReq;
                 // TODO: Cache it, change when room is created or removed.
                 // There is problem with caching because response is msgpacked, but we have to hange id of response
                 // for every request (request.id==response.id). -> We can just send response as XEvent.
                 let rooms: RoomDTO[] = [];
                 this.roomsById.forEach((v, k) => rooms.push(new RoomDTO(v.roomname, v.peers.length, k)));
-                sender.send( new RoomList(rooms, request) );
+                sender.send( new RoomListResp(rooms, request) );
             } break;
             case MSG_TYPE.GET_ROOM_DETAILS: {
-                let request = baseMsg as GetRoomDetails;
+                let request = baseMsg as GetRoomDetailsReq;
                 let room = this.roomsById.get( request.room_id );
                 if( room === undefined ){
                     sender.send( 
