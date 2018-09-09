@@ -2,8 +2,9 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketService } from '../../services/webosocket.service';
-import { SimplePlayer, PlayerState, GameEvent, GameEventType } from '../../../../../common/game/game';
+import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve } from '../../../../../common/game/game';
 import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
+import { ClickCounter } from './click_counter';
 
 @Component({
   selector: 'gameplay',
@@ -12,6 +13,8 @@ import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 
   <button (click)="resetPlayer()" >reset player</button>
   <button (click)="onLeaveRoomButtonClick()" >Quit</button>
+  <br />
+  clicks per second {{clicksPerSecond}}
   <br />
   <canvas #kanvas tabindex="1"
                   (keydown)="onKeyDown($event)"
@@ -44,15 +47,6 @@ import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 })
 export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
 
-  roomid: number;
-  private sub: any; // subscription to route's parameters change
-
-  constructor(
-    private wss: WebsocketService,
-    private router: Router,
-    private route: ActivatedRoute,
-  ) { }
-
   @ViewChild('kanvas') canvasRef: ElementRef;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -62,17 +56,31 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   player: SimplePlayer;
   running = true; // to request next animation frame or not
   keyboardMap: Map <string, GameEventType>;
+  roomid: number;
+  private sub: any; // subscription to route's parameters change
+  clickCounter: ClickCounter;
+  clicksPerSecond = 0;
+  initialState: PlayerState;
+
+  constructor(
+    private wss: WebsocketService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) {
+    this.clickCounter = new ClickCounter();
+  }
 
   public ngOnInit() {
     this.sub = this.route.params.subscribe(params => {
       this.roomid = +params['id']; // (+) converts string 'id' to a number
     });
     this.keysWhichArePressed = new Set();
+    this.initialState = new PlayerState(
+      new Vec2d(this.width / 2, this.height / 2),
+      new Vec2d(1, 0)
+    );
     this.player = new SimplePlayer(
-      new PlayerState(
-        new Vec2d(this.width / 2, this.height / 2),
-        new Vec2d(1, 0)
-      ),
+      this.initialState,
       new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
     );
     this.keyboardMap = new Map();
@@ -121,62 +129,62 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
    */
   drawPlayer( timestamp: number ) {
     const p = this.player;
-    const old = p.state;
-    const cur = this.player.getCurrentState( timestamp );
-    const dt = this.currentUnixTimeMs() - p.lastEvent.time;
+    let state: PlayerState = this.initialState;
 
-    switch ( this.player.lastEvent.eventType ) {
+    for ( let i = 0; i < p.moves.length; i++ ) {
+      const move = p.moves[i];
 
-      case GameEventType.STR8_FORWARD: {
-        this.drawLine(old.pos, cur.pos);
-        this.drawCircleAt( cur.pos );
-      } break;
+      const dt =
+      i === p.moves.length - 1 ?
+      this.currentUnixTimeMs() - move.time
+      :
+      p.moves[i + 1].time - move.time ;
 
-      case GameEventType.TURN_RIGHT: {
-        const cw = false;
-        const center = p.centerOfRotation( GameEventType.TURN_RIGHT );
-        this.drawArc( old.pos, center, +p.w * dt, cw );
-        this.drawCircleAt( cur.pos );
-      } break;
+      state = p.countState( state, move );
 
-      case GameEventType.TURN_LEFT: {
-        const cw = true;
-        const center = p.centerOfRotation( GameEventType.TURN_LEFT );
-        this.drawArc( old.pos, center, -p.w * dt, cw );
-        this.drawCircleAt( cur.pos );
-      } break;
+      switch ( move.eventType ) {
 
+        case GameEventType.STR8_FORWARD: {
+          const segment = this.player.gameEventIntoShape(state, GameEventType.STR8_FORWARD, dt) as Segment;
+          this.drawLine( segment );
+        } break;
+
+        case GameEventType.TURN_RIGHT: {
+          const curve = this.player.gameEventIntoShape(state, GameEventType.TURN_RIGHT, dt) as Curve;
+          this.drawArc( curve, false );
+        } break;
+
+        case GameEventType.TURN_LEFT: {
+          const curve = this.player.gameEventIntoShape(state, GameEventType.TURN_LEFT, dt) as Curve;
+          this.drawArc( curve, true );
+        } break;
+
+      }
     }
   }
 
-  drawArc( point: Vec2d, center: Vec2d, angle: number, cw: boolean ) {
-    const angleStart = point.sub(center).angle();
-    const angleEnd = angleStart + angle;
+  drawLine( segment: Segment) {
+    this.ctx.beginPath();
+    {
+      this.ctx.moveTo( segment.start.x, segment.start.y);
+      this.ctx.lineTo( segment.end.x, segment.end.y);
+    }
+    this.ctx.stroke();
+  }
+
+  drawArc( curve: Curve, cw: boolean ) {
     this.ctx.beginPath();
     {
       this.ctx.arc(
-        center.x, center.y,
-        this.player.radious, // radious
-        angleStart, angleEnd,
+        curve.center.x, curve.center.y,
+        curve.radious, // radious
+        curve.angleStart, curve.angleEnd,
         cw
       );
     }
     this.ctx.stroke();
   }
 
-  drawLine( start: Vec2d, end: Vec2d ) {
-    this.ctx.beginPath();
-    {
-      this.ctx.moveTo( start.x, start.y);
-      this.ctx.lineTo( end.x, end.y);
-    }
-    this.ctx.stroke();
-  }
-
-  /**
-   *
-   * @param pos world (x,y) are screen's (x,y)
-   */
   drawCircleAt( pos: Vec2d ) {
     this.ctx.beginPath();
     {
@@ -247,20 +255,21 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     }
     this.keysWhichArePressed.add(e.code);
 
-    // clickCounter.inc();
+    this.clickCounter.inc();
+    this.clicksPerSecond = this.clickCounter.getClicksPerSecond();
 
-    const timestamp = this.currentUnixTimeMs();
-    const gameEvent = this.keyboardMap.get(e.code);
-    this.player.applyEvent( new GameEvent(timestamp, gameEvent ));
-    /* switch ( e.code ) {
-      case 'ArrowLeft': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_LEFT) ); break;
-      case 'ArrowRight': this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_RIGHT) ); break;
-    } */
-    // console.log( `${e.code} down` );
+    this.player.applyEvent(
+      new GameEvent(
+        this.currentUnixTimeMs(),
+        this.keyboardMap.get(e.code)
+      )
+    );
   }
 
   onKeyUp( e: KeyboardEvent ) {
-    // clickCounter.inc();
+    this.clickCounter.inc();
+    this.clicksPerSecond = this.clickCounter.getClicksPerSecond();
+
     this.keysWhichArePressed.delete( e.code );
     const timestamp = this.currentUnixTimeMs();
     // a case when eg player pressed 'left', then 'right', then released 'left' but still holding 'right'
@@ -270,27 +279,12 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     }
     // eg player pressed 'left', then 'right', then released 'right' but still holding 'left' - we have to (re)submit 'left' again
     // TODO: maybe resubmit the last one pressed, here it is the random one, but in the case of this game it's enough
-    const someKeyStillBeingPressed = this.keysWhichArePressed.values().next().value;
+    const aKeyStillBeingPressed = this.keysWhichArePressed.values().next().value;
 
-    const gameEvent = this.keyboardMap.get(someKeyStillBeingPressed);
-    if ( this.player.lastEvent.eventType !== gameEvent ) {
+    const gameEvent = this.keyboardMap.get(aKeyStillBeingPressed);
+    if ( this.player.lastEvent().eventType !== gameEvent ) {
       this.player.applyEvent( new GameEvent(timestamp, gameEvent) );
     }
-
-    /*
-    switch ( someKeyStillBeingPressed ) {
-      case 'ArrowLeft':
-        if ( this.player.lastEvent.eventType !== GameEventType.TURN_LEFT ) {
-          this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_LEFT) );
-        }
-        break;
-      case 'ArrowRight':
-        if ( this.player.lastEvent.eventType !== GameEventType.TURN_RIGHT ) {
-          this.player.applyEvent( new GameEvent(timestamp, GameEventType.TURN_RIGHT) );
-        }
-        break;
-    }
-    */
   }
 
   onBlur( e: FocusEvent) {

@@ -28,10 +28,20 @@ export abstract class AbstractState {
 }
 export abstract class GameObject<S extends AbstractState> {
     state: S;
-    abstract getCurrentState(time: number): S;
+    // abstract getCurrentState(time: number): S;
 }
 
-
+interface Shape {}
+export class Segment implements Shape {
+    constructor( public start: Vec2d, 
+                 public end: Vec2d ) { }
+}
+export class Curve implements Shape {
+    constructor( public center: Vec2d,
+                 public radious: number,
+                 public angleStart: number,
+                 public angleEnd: number) {}
+}
 export class PlayerState extends AbstractState {
     pos: Vec2d;
     dir: Vec2d;
@@ -43,32 +53,68 @@ export class PlayerState extends AbstractState {
 }
 export class SimplePlayer extends GameObject<PlayerState> {
 
-    lastEvent: GameEvent;
+    moves: GameEvent[]
 
     velocity = 0.1; // szybkosc liniowa
     radious = 50;
-    // w = 2*Math.PI / 1000; // szybkosc kolowa, w rad/sec
     w = this.velocity / this.radious;
  
     constructor( ps: PlayerState, initialEvent: GameEvent ) {
         super();
         this.state = ps;
-        this.lastEvent = initialEvent;
+        this.moves = [ initialEvent ];
+    }
+
+    gameEventIntoShape( state: PlayerState, eventType: GameEventType, dt: number ): Shape {
+        const pos = state.pos;
+        const dir = state.dir;
+        const v = this.velocity;
+        switch( eventType ) {
+            case GameEventType.STR8_FORWARD: {
+                return new Segment( pos, pos.add(dir.mul(v * dt)));
+            }
+            case GameEventType.TURN_LEFT: {
+                const w = this.w;
+                const anchor = this.centerOfRotation( GameEventType.TURN_LEFT );
+                const angleStart = pos.sub(anchor).angle();
+                const angleEnd = angleStart - w * dt;
+                return new Curve( 
+                    anchor, 
+                    this.radious,
+                    angleStart, angleEnd
+                );
+            }
+            case GameEventType.TURN_RIGHT: {
+                const w = this.w;
+                const anchor = this.centerOfRotation( GameEventType.TURN_RIGHT );
+                const angleStart = pos.sub(anchor).angle();
+                const angleEnd = angleStart + w * dt;
+                return new Curve( 
+                    anchor, 
+                    this.radious,
+                    angleStart, angleEnd
+                );
+            }
+        }
     }
 
     applyEvent( e: GameEvent ) {
-        this.state = this.getCurrentState( e.time );
-        this.lastEvent = e;
+        this.state = this.countState( this.state, e );
+        this.moves.push(e);
     }
 
-    getCurrentState(time: number): PlayerState {
+    lastEvent() {
+        return this.moves[this.moves.length-1];
+    }
+
+    countState(stateBefore: PlayerState, event: GameEvent): PlayerState {
         const v = this.velocity;
         const w = this.w;
-        const dt = time - this.lastEvent.time;
+        const dt = event.time - this.lastEvent().time;
         const pos = this.state.pos;
         const dir = this.state.dir;
         const r = this.radious;
-        switch (this.lastEvent.eventType) {
+        switch (event.eventType) {
             case GameEventType.STR8_FORWARD: {
                 // return p(t) = p0 + v * dir * t
                 const newPos = pos.add(dir.mul(v * dt));
