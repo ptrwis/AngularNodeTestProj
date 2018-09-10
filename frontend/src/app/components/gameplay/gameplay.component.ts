@@ -2,7 +2,7 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketService } from '../../services/webosocket.service';
-import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve } from '../../../../../common/game/game';
+import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve, Shape } from '../../../../../common/game/game';
 import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 import { ClickCounter } from './click_counter';
 
@@ -24,6 +24,11 @@ import { ClickCounter } from './click_counter';
                   (blur)="onBlur($event)"
                   (focus)="onFocus($event)" >
   </canvas>
+  <ul>TODO:
+    <li>gaps</li>
+    <li>collisions</li>
+    <li>multiplayer</li>
+  </ul>
 
   <!--
   <h4>Click on the owls to make them flying!</h4>
@@ -100,11 +105,11 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.canvas.height = this.height;
     this.ctx.fillStyle = '#000000';
     this.ctx.strokeStyle = '#ffffff';
-    this.ctx.lineWidth = 2;
-    this.ctx.shadowColor = '#FFFF00';
-    this.ctx.shadowBlur = 5;
+    this.ctx.lineWidth = 6;
+    // this.ctx.shadowColor = '#FF0000';
+    // this.ctx.shadowBlur = 1;
     // this.ctx.shadowOffsetX = 10;
-    // this.ctx.lineCap = 'round';
+    this.ctx.lineCap = 'round';
     this.clearScreen();
     this.drawOnCanvas();
   }
@@ -137,39 +142,15 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     );
   }
 
-  /**
-   *
-   * @param timestamp
-   */
   drawPlayer( ) {
-    const p = this.player;
-    let state: PlayerState = this.initialState;
+    this.player.shapes.forEach( shape => this.drawShape(shape) );
+    this.drawShape( this.player.lastShape( this.currentUnixTimeMs() ) );
+  }
 
-    for ( let i = 0; i < p.moves.length; i++ ) {
-      const move = p.moves[i];
-
-      const dt =
-      i === p.moves.length - 1 ?
-      this.currentUnixTimeMs() - move.time
-      :
-      p.moves[i + 1].time - move.time ;
-
-      switch ( move.eventType ) {
-
-        case GameEventType.STR8_FORWARD: {
-          const segment = this.player.gameEventIntoShape(state, GameEventType.STR8_FORWARD, dt) as Segment;
-          this.drawLine( segment );
-          break;
-        }
-        // GameEventType.TURN_RIGHT or TURN_LEFT
-        default : {
-          const curve = this.player.gameEventIntoShape(state, move.eventType, dt) as Curve;
-          this.drawCurve( curve );
-        }
-
-      }
-      // state of last move is where current line ends, and it's already drawed
-      state = p.countState( state, dt, move );
+  drawShape( shape: Shape ) {
+    switch ( shape.constructor ) {
+      case Segment: this.drawLine( shape as Segment ); break;
+      case Curve: this.drawCurve( shape as Curve ); break;
     }
   }
 
@@ -225,22 +206,6 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     );
   }
 
-  /**
-   * dont know how to run it yet
-   */
-  /*private drawOnCanvas2(){
-    var app = new PIXI.Application(320, 240, {backgroundColor : 0x1099bb});
-    document.body.appendChild(app.view);
-    var bunny = PIXI.Sprite.fromImage('https://c.staticblitz.com/assets/packs/blitz_logo-11cebad97cad4b50bc955cf72f532d1b.png');
-    bunny.anchor.set(0.5);
-    bunny.x = app.screen.width / 2;
-    bunny.y = app.screen.height / 2;
-    app.stage.addChild(bunny);
-    app.ticker.add(function(delta) {
-        bunny.rotation += 0.1 * delta;
-    });
-  }*/
-
   private currentUnixTimeMs() {
     return new Date().getTime();
   }
@@ -292,6 +257,9 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     const aKeyStillBeingPressed = this.keysWhichArePressed.values().next().value;
 
     const gameEvent = this.keyboardMap.get(aKeyStillBeingPressed);
+    if ( gameEvent === undefined ) {
+      return;
+    }
     if ( this.player.lastEvent().eventType !== gameEvent ) {
       this.player.applyEvent( new GameEvent(timestamp, gameEvent) );
     }

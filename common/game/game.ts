@@ -11,6 +11,8 @@ export enum GameEventType {
     /*SHOT*/
 }
 
+export enum BRUSH_STATE{ UP, DOWN }
+
 /**
  * What player did and when
  * TODO: + which player
@@ -24,7 +26,7 @@ export class GameEvent {
     }
 }
 
-interface Shape {}
+export abstract class Shape {}
 export class Segment implements Shape {
     constructor( public start: Vec2d, 
                  public end: Vec2d ) { }
@@ -45,9 +47,14 @@ export class PlayerState {
 }
 export class SimplePlayer {
 
-    moves: GameEvent[]
-    lastState: PlayerState;
+    //moves: GameEvent[]; // replace with shapes[]
     shapes: Shape[];
+
+    lastState: PlayerState;
+    lastMove: GameEvent;
+
+    brushState: BRUSH_STATE;
+    brushDownTime: number;
 
     velocity = 0.1; // szybkosc liniowa
     radious = 50;
@@ -55,7 +62,8 @@ export class SimplePlayer {
  
     constructor( initialState: PlayerState, initialEvent: GameEvent ) {
         this.lastState = initialState;
-        this.moves = [ initialEvent ];
+        this.brushState = BRUSH_STATE.DOWN;
+        this.shapes = [];
     }
 
     /**
@@ -99,15 +107,57 @@ export class SimplePlayer {
         }
     }
 
+    /**
+     * A shape of current move, it's not yet in this.shapes
+     */
+    lastShape( currentTime: number ) {
+        return this.gameEventIntoShape( 
+            this.lastState, 
+            this.lastMove.eventType, 
+            currentTime - this.lastMove.time
+        );
+    }
+
     applyEvent( e: GameEvent ) {
-        this.lastState = this.countState( this.lastState, this.lastEvent().time, e );
-        this.moves.push( e );
-        // if state of brush is UP, apply event but dont add shape
-        // on BRUSH DOWN event start creating a shape
+        switch( e.eventType ) {
+            case GameEventType.STR8_FORWARD:
+            case GameEventType.TURN_LEFT:
+            case GameEventType.TURN_RIGHT:
+                this.lastState = this.countState( this.lastState, this.lastEvent().time, e );
+                if ( this.brushState === BRUSH_STATE.DOWN ) {
+                    // close current shape
+                    this.shapes.push( 
+                        this.gameEventIntoShape( 
+                            this.lastState, 
+                            this.lastMove.eventType, 
+                            e.time - this.lastMove.time 
+                        )
+                    );
+                }
+            break;
+            case GameEventType.DOWN:
+                // assert this.brushState == BRUSH_STATE.UP
+                this.brushState = BRUSH_STATE.DOWN;
+                this.brushDownTime = e.time;
+                // start shape, remember this Shape(state, time, event)
+            break;
+            case GameEventType.UP:
+                // assert this.brushState == BRUSH_STATE.DOWN
+                this.brushState = BRUSH_STATE.UP;
+                // close current shape
+                this.shapes.push(
+                    this.gameEventIntoShape( 
+                        this.lastState, 
+                        this.lastMove.eventType, 
+                        e.time - this.lastMove.time
+                    )
+                );
+            break;
+        }
     }
 
     lastEvent() {
-        return this.moves[this.moves.length-1];
+        return this.lastMove;
     }
 
     countState(state: PlayerState, dt: number, event: GameEvent): PlayerState {
