@@ -16,6 +16,8 @@ import { ClickCounter } from './click_counter';
   <br />
   clicks per second {{clicksPerSecond}}
   <br />
+  number of shapes: {{player.moves.length}}
+  <br />
   <canvas #kanvas tabindex="1"
                   (keydown)="onKeyDown($event)"
                   (keyup)="onKeyUp($event)"
@@ -108,9 +110,8 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   private drawOnCanvas() {
-    const timestamp = this.currentUnixTimeMs();
     this.clearScreen();
-    this.drawPlayer( this.currentUnixTimeMs() );
+    this.drawPlayer( );
     if ( this.running ) {
       requestAnimationFrame(this.drawOnCanvas.bind(this));
     }
@@ -123,11 +124,24 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
+  randomGap() {
+    const GAP_DURATION = 200;
+    const GAP_FREQUENCY = 3000;
+    window.setTimeout(
+      () => {
+        this.player.applyEvent( new GameEvent(this.currentUnixTimeMs(), GameEventType.UP) );
+        this.player.applyEvent( new GameEvent(this.currentUnixTimeMs() + GAP_DURATION, GameEventType.DOWN) );
+        this.randomGap(); // set next gap
+      } ,
+      GAP_DURATION + Math.random() * GAP_FREQUENCY
+    );
+  }
+
   /**
    *
    * @param timestamp
    */
-  drawPlayer( timestamp: number ) {
+  drawPlayer( ) {
     const p = this.player;
     let state: PlayerState = this.initialState;
 
@@ -140,26 +154,22 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
       :
       p.moves[i + 1].time - move.time ;
 
-      state = p.countState( state, move );
-
       switch ( move.eventType ) {
 
         case GameEventType.STR8_FORWARD: {
           const segment = this.player.gameEventIntoShape(state, GameEventType.STR8_FORWARD, dt) as Segment;
           this.drawLine( segment );
-        } break;
-
-        case GameEventType.TURN_RIGHT: {
-          const curve = this.player.gameEventIntoShape(state, GameEventType.TURN_RIGHT, dt) as Curve;
-          this.drawArc( curve, false );
-        } break;
-
-        case GameEventType.TURN_LEFT: {
-          const curve = this.player.gameEventIntoShape(state, GameEventType.TURN_LEFT, dt) as Curve;
-          this.drawArc( curve, true );
-        } break;
+          break;
+        }
+        // GameEventType.TURN_RIGHT or TURN_LEFT
+        default : {
+          const curve = this.player.gameEventIntoShape(state, move.eventType, dt) as Curve;
+          this.drawCurve( curve );
+        }
 
       }
+      // state of last move is where current line ends, and it's already drawed
+      state = p.countState( state, dt, move );
     }
   }
 
@@ -172,14 +182,14 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.ctx.stroke();
   }
 
-  drawArc( curve: Curve, cw: boolean ) {
+  drawCurve( curve: Curve ) {
     this.ctx.beginPath();
     {
       this.ctx.arc(
         curve.center.x, curve.center.y,
-        curve.radious, // radious
+        curve.radious,
         curve.angleStart, curve.angleEnd,
-        cw
+        curve.angleEnd < curve.angleStart // ccw?
       );
     }
     this.ctx.stroke();
