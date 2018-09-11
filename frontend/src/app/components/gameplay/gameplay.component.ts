@@ -102,11 +102,11 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.ctx.fillStyle = '#000000';
     this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 6;
-    this.ctx.lineCap = 'round';
+    // this.ctx.lineCap = 'round';
     // this.ctx.shadowColor = '#FF0000';
     // this.ctx.shadowBlur = 1;
     // this.ctx.shadowOffsetX = 10;
-    this.randomGap();
+    this.fireGap();
     this.drawOnCanvas();
   }
 
@@ -118,9 +118,6 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 
-  /**
-   *
-   */
   clearScreen() {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }

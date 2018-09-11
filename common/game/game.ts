@@ -30,12 +30,71 @@ export abstract class Shape {}
 export class Segment implements Shape {
     constructor( public start: Vec2d, 
                  public end: Vec2d ) { }
+    a() { return this.end.sub(this.start).angle(); }
+    b(a:number) { return this.start.y - a * this.start.y; }
+    intersectionS( s: Segment ): Vec2d {
+        const a1 = this.a();
+        const a2 = s.a();
+        if( a1 === a2 ) {
+            return null;
+        }
+        const b1 = this.b(a1);
+        const b2 = s.b(a2);
+        const x = (b1 - b2)/(a2 - a1);
+        const y = a1 * x + b1;
+        return new Vec2d(x, y);
+    }
+    intersectionC( c: Curve ) {
+        return c.intersectionS(this);
+    }
+}
+export class Circle implements Shape {
+    constructor( public center: Vec2d,
+                 public radious: number) {
+    }
 }
 export class Curve implements Shape {
     constructor( public center: Vec2d,
                  public radious: number,
                  public angleStart: number,
-                 public angleEnd: number) {}
+                 public angleEnd: number) {
+    }
+    intersectionC( c: Curve ) {
+
+    }
+    // might be 2 points
+    intersectionS( s: Segment ) {
+        // 1. find intercetion of line and full circle
+        // http://mathworld.wolfram.com/Circle-LineIntersection.html
+        const r = this.radious;
+        const   x1 = s.start.x, y1 = s.start.y, 
+                x2 = s.end.x,   y2 = s.end.y;
+        const dx = x1 - x2;
+        const dy = y1 - y2;
+        const dr = Math.sqrt( dx**2 + dy**2 );
+        const D = x1 * y2 - x2 * y1;
+        const discriminant = r**2 * dr**2 - D**2;
+        if ( discriminant < 0 ) { // no intersection
+            return null;
+        } else if ( discriminant < 0.000001 ) { // tangent
+            const x = (D * dy) / dr**2;
+            const y = (-D * dx) / dr**2;
+            const p = new Vec2d(x,y);
+            // 2. check domain for a curve
+            // TODO
+        } else if ( discriminant > 0.000001 ) { // intersection
+            // p1
+            const x1 = (D * dy + Math.sign(dy) * dx * discriminant**0.5 ) / dr**2;
+            const y1 = (-D * dx + Math.abs(dy) * discriminant**0.5 ) / dr**2;
+            const p1 = new Vec2d(x1,y1);
+            // p2
+            const x2 = (D * dy - Math.sign(dy) * dx * discriminant**0.5 ) / dr**2;
+            const y2 = (-D * dx - Math.abs(dy) * discriminant**0.5 ) / dr**2;
+            const p2 = new Vec2d(x2,y2);
+            // 2. check domain for a curve
+            // TODO
+        }
+    }
 }
 /**
  * position and direction of the head

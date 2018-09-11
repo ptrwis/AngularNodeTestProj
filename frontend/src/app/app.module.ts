@@ -8,6 +8,7 @@ import {RadioButtonModule} from 'primeng/radiobutton';
 import {CalendarModule} from 'primeng/calendar';
 import {ListboxModule} from 'primeng/listbox';
 import {TableModule} from 'primeng/table';
+import {SliderModule} from 'primeng/slider';
 
 import { AppComponent } from './components/app/app.component';
 import { RoomlistComponent } from './components/roomlist/roomslist.component';
@@ -17,6 +18,7 @@ import { SettingsComponent } from './components/settings/settings.component';
 import { AppRoutingModule } from './app-routing.module';
 import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
+import { CollisionsComponent } from './components/collisions/collisions.component';
 
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
@@ -30,7 +32,8 @@ import { WebsocketService } from './services/webosocket.service';
     RoomlistComponent,
     SignInComponent,
     SettingsComponent,
-    OwlComponent
+    OwlComponent,
+    CollisionsComponent
   ],
   imports: [
     AppRoutingModule,
@@ -41,7 +44,8 @@ import { WebsocketService } from './services/webosocket.service';
     BrowserAnimationsModule,
     CalendarModule,
     ListboxModule,
-    TableModule
+    TableModule,
+    SliderModule
   ],
   providers: [
     WebsocketService,

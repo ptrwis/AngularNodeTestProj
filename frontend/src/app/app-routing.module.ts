@@ -6,12 +6,14 @@ import { CreateRoomComponent } from './components/createroom/createroom.componen
 import { GamePlayComponent } from './components/gameplay/gameplay.component';
 import { AuthGuard } from './guards/auth.guard';
 import { SettingsComponent } from './components/settings/settings.component';
+import { CollisionsComponent } from './components/collisions/collisions.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/roomlist', pathMatch: 'full', canActivate: [AuthGuard] },
   { path: 'roomlist',   component: RoomlistComponent, canActivate: [AuthGuard] },
   { path: 'settings',   component: SettingsComponent },
   { path: 'signin',     component: SignInComponent },
+  { path: 'collisions',     component: CollisionsComponent },
   { path: 'createroom/:id', component: CreateRoomComponent, canActivate: [AuthGuard] },
   { path: 'gameplay/:id',   component: GamePlayComponent, canActivate: [AuthGuard] }
 ];
