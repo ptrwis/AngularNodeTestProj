@@ -7,7 +7,7 @@ export enum GameEventType {
     TURN_LEFT,
     TURN_RIGHT,
     STR8_FORWARD,
-    UP, DOWN // GAP
+    PULL, PUSH // GAP
     /*SHOT*/
 }
 
@@ -37,6 +37,9 @@ export class Curve implements Shape {
                  public angleStart: number,
                  public angleEnd: number) {}
 }
+/**
+ * position and direction of the head
+ */
 export class PlayerState {
     pos: Vec2d;
     dir: Vec2d;
@@ -46,15 +49,12 @@ export class PlayerState {
     }
 }
 export class SimplePlayer {
-
-    //moves: GameEvent[]; // replace with shapes[]
+    
     shapes: Shape[];
 
     lastState: PlayerState;
     lastMove: GameEvent;
-
     brushState: BRUSH_STATE;
-    brushDownTime: number;
 
     velocity = 0.1; // szybkosc liniowa
     radious = 50;
@@ -62,49 +62,10 @@ export class SimplePlayer {
  
     constructor( initialState: PlayerState, initialEvent: GameEvent ) {
         this.lastState = initialState;
+        this.lastMove = initialEvent;
+        // this.lastShapeEvent = initialEvent;
         this.brushState = BRUSH_STATE.DOWN;
         this.shapes = [];
-    }
-
-    /**
-     * Player being at state 'state' making move 'eventType' for duration of 'dt'
-     * makes shape 'Shape'
-     * TODO: move outside
-     * @param state 
-     * @param eventType 
-     * @param dt 
-     */
-    gameEventIntoShape( state: PlayerState, eventType: GameEventType, dt: number ): Shape {
-        const pos = state.pos;
-        const dir = state.dir;
-        const v = this.velocity;
-        switch( eventType ) {
-            case GameEventType.STR8_FORWARD: {
-                return new Segment( pos, pos.add(dir.mul(v * dt)));
-            }
-            case GameEventType.TURN_LEFT: {
-                const w = this.w;
-                const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
-                const angleStart = pos.sub(anchor).angle();
-                const angleEnd = angleStart - w * dt;
-                return new Curve( 
-                    anchor, 
-                    this.radious,
-                    angleStart, angleEnd
-                );
-            }
-            case GameEventType.TURN_RIGHT: {
-                const w = this.w;
-                const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
-                const angleStart = pos.sub(anchor).angle();
-                const angleEnd = angleStart + w * dt;
-                return new Curve( 
-                    anchor, 
-                    this.radious,
-                    angleStart, angleEnd
-                );
-            }
-        }
     }
 
     /**
@@ -113,59 +74,66 @@ export class SimplePlayer {
     lastShape( currentTime: number ) {
         return this.gameEventIntoShape( 
             this.lastState, 
+            currentTime - this.lastMove.time, // lastTimeBrushWasPushed
             this.lastMove.eventType, 
-            currentTime - this.lastMove.time
         );
     }
-
+    
     applyEvent( e: GameEvent ) {
+        const dt = e.time - this.lastMove.time;
         switch( e.eventType ) {
             case GameEventType.STR8_FORWARD:
             case GameEventType.TURN_LEFT:
             case GameEventType.TURN_RIGHT:
-                this.lastState = this.countState( this.lastState, this.lastEvent().time, e );
-                if ( this.brushState === BRUSH_STATE.DOWN ) {
-                    // close current shape
-                    this.shapes.push( 
-                        this.gameEventIntoShape( 
-                            this.lastState, 
-                            this.lastMove.eventType, 
-                            e.time - this.lastMove.time 
-                        )
-                    );
+            {
+                const newShape = this.gameEventIntoShape( this.lastState, dt, this.lastMove.eventType);
+                // If player makes turnes during gap
+                if ( this.brushState !== BRUSH_STATE.UP ) {
+                    this.shapes.push( newShape );
                 }
-            break;
-            case GameEventType.DOWN:
+                this.lastState = this.countState( this.lastState, dt , this.lastMove.eventType );
+                this.lastMove = e;
+            } break;
+            case GameEventType.PUSH: {
                 // assert this.brushState == BRUSH_STATE.UP
                 this.brushState = BRUSH_STATE.DOWN;
-                this.brushDownTime = e.time;
-                // start shape, remember this Shape(state, time, event)
-            break;
-            case GameEventType.UP:
+                // start new shape
+                this.lastState = this.countState( this.lastState, dt , this.lastMove.eventType );
+                this.lastMove.time = e.time; // leave game event, just update time
+            } break;
+            case GameEventType.PULL: {
                 // assert this.brushState == BRUSH_STATE.DOWN
                 this.brushState = BRUSH_STATE.UP;
                 // close current shape
-                this.shapes.push(
-                    this.gameEventIntoShape( 
-                        this.lastState, 
-                        this.lastMove.eventType, 
-                        e.time - this.lastMove.time
-                    )
-                );
-            break;
+                const newShape = this.gameEventIntoShape( this.lastState, dt, this.lastMove.eventType);
+                this.shapes.push( newShape );
+                this.lastState = this.countState( this.lastState, dt, this.lastMove.eventType );
+                this.lastMove.time = e.time; // leave game event, just update time
+                // DONT start new shape
+            } break;
+           default:
+                console.log(`applyEvent: unknown event type ${GameEventType[e.eventType]}`);
+        }
+    }
+   
+    centerOfRotation( state: PlayerState, ev: GameEventType ) {
+        const r = this.radious;
+        const pos = state.pos;
+        const dir = state.dir;
+        switch ( ev ) {
+            case GameEventType.TURN_LEFT: return pos.sub( dir.normal().mul(r) );
+            case GameEventType.TURN_RIGHT: return pos.add( dir.normal().mul(r) );
+            default:
+                console.log(`centerOfRotation: unknown event type ${GameEventType[ev]}`);
         }
     }
 
-    lastEvent() {
-        return this.lastMove;
-    }
-
-    countState(state: PlayerState, dt: number, event: GameEvent): PlayerState {
+    countState(state: PlayerState, dt: number, eventType: GameEventType): PlayerState {
         const v = this.velocity;
         const w = this.w;
         const pos = state.pos;
         const dir = state.dir;
-        switch (event.eventType) {
+        switch ( eventType ) {
             case GameEventType.STR8_FORWARD: {
                 // return p(t) = p0 + v * dir * t
                 const newPos = pos.add(dir.mul(v * dt));
@@ -183,16 +151,43 @@ export class SimplePlayer {
                 const newDir = newPos.sub(anchor).normal().mul(+1);
                 return new PlayerState(newPos, newDir);
             }
+            default:
+                console.log(`countState: unknown event type ${GameEventType[eventType]}`);
         }
     }
 
-    centerOfRotation( state: PlayerState, ev: GameEventType ) {
-        const r = this.radious;
-        const pos = state.pos;
-        const dir = state.dir;
-        switch( ev ){
-            case GameEventType.TURN_LEFT: return pos.sub( dir.normal().mul(r) );
-            case GameEventType.TURN_RIGHT: return pos.add( dir.normal().mul(r) );
+    curveFromEndpoints( start: Vec2d, end: Vec2d, center: Vec2d ): Curve {
+        return new Curve(center, this.radious, start.sub(center).angle(), end.sub(center).angle());
+    }
+
+    gameEventIntoShape( state: PlayerState, dt: number, eventType: GameEventType ): Shape {
+        const w = this.w;
+        switch( eventType ) {
+            case GameEventType.STR8_FORWARD: {
+                // const end = this.countState( state, dt, eventType );
+                // return new Segment( state.pos, end.pos);
+                return new Segment( state.pos, state.pos.add(state.dir.mul(this.velocity * dt)));
+            }
+            case GameEventType.TURN_LEFT: {
+                const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
+                const angleStart = state.pos.sub(anchor).angle();
+                const angleEnd = angleStart - w * dt;
+                return new Curve( anchor, this.radious, angleStart, angleEnd );
+                /* const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
+                const newState = this.countState(state, dt, eventType);
+                return this.curveFromEndpoints( state.pos, newState.pos, anchor ); */
+            }
+            case GameEventType.TURN_RIGHT: {
+                const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
+                const angleStart = state.pos.sub(anchor).angle();
+                const angleEnd = angleStart + w * dt;
+                return new Curve( anchor, this.radious, angleStart, angleEnd );
+                /*const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
+                const newState = this.countState(state, dt, eventType);
+                return this.curveFromEndpoints( state.pos, newState.pos, anchor );*/
+            }
+            default:
+                console.log(`gameEventIntoShape: unknown event type ${GameEventType[eventType]}`);
         }
     }
 

@@ -2,9 +2,10 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketService } from '../../services/webosocket.service';
-import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve, Shape } from '../../../../../common/game/game';
+import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve, Shape, BRUSH_STATE } from '../../../../../common/game/game';
 import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 import { ClickCounter } from './click_counter';
+import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
 
 @Component({
   selector: 'gameplay',
@@ -16,7 +17,7 @@ import { ClickCounter } from './click_counter';
   <br />
   clicks per second {{clicksPerSecond}}
   <br />
-  number of shapes: {{player.moves.length}}
+  number of shapes: {{player.shapes.length+1}}
   <br />
   <canvas #kanvas tabindex="1"
                   (keydown)="onKeyDown($event)"
@@ -61,13 +62,12 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
   @Input() public height = 480;
   keysWhichArePressed: Set<string>;
   player: SimplePlayer;
-  running = true; // to request next animation frame or not
+  isRunning = true; // to request next animation frame or not
   keyboardMap: Map <string, GameEventType>;
   roomid: number;
   private sub: any; // subscription to route's parameters change
   clickCounter: ClickCounter;
   clicksPerSecond = 0;
-  initialState: PlayerState;
 
   constructor(
     private wss: WebsocketService,
@@ -75,25 +75,21 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     private route: ActivatedRoute,
   ) {
     this.clickCounter = new ClickCounter();
+    this.player = new SimplePlayer(
+      new PlayerState( new Vec2d(this.width / 2, this.height / 2), new Vec2d(1, 0) ),
+      new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
+    );
+    this.keysWhichArePressed = new Set();
+    this.keyboardMap = new Map();
+    this.keyboardMap.set( 'ArrowLeft', GameEventType.TURN_LEFT );
+    this.keyboardMap.set( 'ArrowRight', GameEventType.TURN_RIGHT );
+    // this.keyboardMap.set( 'ArrowUp', GameEventType.STR8_FORWARD );
   }
 
   public ngOnInit() {
     this.sub = this.route.params.subscribe(params => {
       this.roomid = +params['id']; // (+) converts string 'id' to a number
     });
-    this.keysWhichArePressed = new Set();
-    this.initialState = new PlayerState(
-      new Vec2d(this.width / 2, this.height / 2),
-      new Vec2d(1, 0)
-    );
-    this.player = new SimplePlayer(
-      this.initialState,
-      new GameEvent( this.currentUnixTimeMs(), GameEventType.STR8_FORWARD)
-    );
-    this.keyboardMap = new Map();
-    this.keyboardMap.set( 'ArrowLeft', GameEventType.TURN_LEFT );
-    this.keyboardMap.set( 'ArrowRight', GameEventType.TURN_RIGHT );
-    // this.keyboardMap.set( 'ArrowUp', GameEventType.STR8_FORWARD );
   }
 
   public ngAfterViewInit() {
@@ -106,18 +102,18 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.ctx.fillStyle = '#000000';
     this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 6;
+    this.ctx.lineCap = 'round';
     // this.ctx.shadowColor = '#FF0000';
     // this.ctx.shadowBlur = 1;
     // this.ctx.shadowOffsetX = 10;
-    this.ctx.lineCap = 'round';
-    this.clearScreen();
+    this.randomGap();
     this.drawOnCanvas();
   }
 
   private drawOnCanvas() {
     this.clearScreen();
     this.drawPlayer( );
-    if ( this.running ) {
+    if ( this.isRunning ) {
       requestAnimationFrame(this.drawOnCanvas.bind(this));
     }
   }
@@ -129,25 +125,44 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
-  randomGap() {
-    const GAP_DURATION = 200;
-    const GAP_FREQUENCY = 3000;
+  fireGap() {
+    const GAP_START_AFTER = 500 + Math.random() * 3000;
+    const GAP_STOP_AFTER = GAP_START_AFTER + 200; // constant duration
+    // START
+    window.setTimeout(
+      () => this.player.applyEvent( new GameEvent( this.currentUnixTimeMs(), GameEventType.PULL) ),
+      GAP_START_AFTER
+    );
+    // STOP
     window.setTimeout(
       () => {
-        this.player.applyEvent( new GameEvent(this.currentUnixTimeMs(), GameEventType.UP) );
-        this.player.applyEvent( new GameEvent(this.currentUnixTimeMs() + GAP_DURATION, GameEventType.DOWN) );
-        this.randomGap(); // set next gap
-      } ,
-      GAP_DURATION + Math.random() * GAP_FREQUENCY
+        this.player.applyEvent( new GameEvent( this.currentUnixTimeMs(), GameEventType.PUSH));
+        if ( this.isRunning ) {
+          this.fireGap();
+        }
+      },
+      GAP_STOP_AFTER
     );
   }
 
   drawPlayer( ) {
-    this.player.shapes.forEach( shape => this.drawShape(shape) );
-    this.drawShape( this.player.lastShape( this.currentUnixTimeMs() ) );
+    const p = this.player;
+    const shapesToDraw = [ ... p.shapes ];
+    const lastShape = p.lastShape( this.currentUnixTimeMs() );
+    if ( p.brushState === BRUSH_STATE.DOWN ) {
+      shapesToDraw.push( lastShape );
+    }
+    shapesToDraw.forEach( shape => this.drawShape(shape) );
+
+    const end = this.player.countState( p.lastState, this.currentUnixTimeMs() - p.lastMove.time, p.lastMove.eventType);
+    this.drawCircleAt( end.pos );
+
   }
 
   drawShape( shape: Shape ) {
+    if ( shape === undefined ) {
+      return;
+    }
     switch ( shape.constructor ) {
       case Segment: this.drawLine( shape as Segment ); break;
       case Curve: this.drawCurve( shape as Curve ); break;
@@ -192,7 +207,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     // subscription is in ngOnInit
     this.sub.unsubscribe();
     this.wss.send( new LeaveTheRoomCmd(this.roomid) );
-    this.running = false;
+    this.isRunning = false;
     console.log( 'leaving gameplay' );
   }
 
@@ -233,10 +248,14 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     this.clickCounter.inc();
     this.clicksPerSecond = this.clickCounter.getClicksPerSecond();
 
+    const gameEvent = this.keyboardMap.get(e.code);
+    if ( gameEvent === undefined ) {
+      return;
+    }
     this.player.applyEvent(
       new GameEvent(
         this.currentUnixTimeMs(),
-        this.keyboardMap.get(e.code)
+        gameEvent
       )
     );
   }
@@ -257,10 +276,7 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
     const aKeyStillBeingPressed = this.keysWhichArePressed.values().next().value;
 
     const gameEvent = this.keyboardMap.get(aKeyStillBeingPressed);
-    if ( gameEvent === undefined ) {
-      return;
-    }
-    if ( this.player.lastEvent().eventType !== gameEvent ) {
+    if ( this.player.lastMove.eventType !== gameEvent ) {
       this.player.applyEvent( new GameEvent(timestamp, gameEvent) );
     }
   }
