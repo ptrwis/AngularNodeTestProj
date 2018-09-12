@@ -7,12 +7,6 @@ import { Vec2d } from '../../../../../common/game/vec2d';
     template: `
     <h3>testing collisions</h3>
     <div>
-        <p-slider   [(ngModel)]="rangeValues" [range]="true" [min]="0" [max]="rangeMax"
-                    (onChange)="handleSliderChange($event)" >
-        </p-slider>
-        <br />
-        {{rangeValues[0]}} - {{rangeValues[1]}} / {{dragging}}
-        <br />
         <div>
             <p-radioButton name="shape" value="curve"   [(ngModel)]="selectedShape" label="curve"> </p-radioButton>
             <p-radioButton name="shape" value="segment" [(ngModel)]="selectedShape" label="segment"> </p-radioButton>
@@ -43,9 +37,6 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
     savedShape: Shape;
     selectedTransformation = 'move';
     selectedShape = 'curve';
-
-    rangeMax = 2 * 360;
-    rangeValues: number[] = [0, 360];
 
     segment1: Segment;
     segment2: Segment;
@@ -84,12 +75,12 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.curve1 = new Curve(
             new Vec2d(w2, 0.25 * h),
             100,
-            this.rangeValues[0], this.rangeValues[1]
+            0.7 * 2 * Math.PI, 0.3 * 2 * Math.PI
         );
         this.curve2 = new Curve(
-            new Vec2d(w2, 0.75 * h),
+            new Vec2d(w2, 0.55 * h),
             100,
-            this.rangeValues[0], this.rangeValues[1]
+            0.3 * 2 * Math.PI, 0.7 * 2 * Math.PI
         );
     }
 
@@ -108,7 +99,6 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     handleMouseUp( ) {
         this.dragging = false;
-        this.segment1.intersectionS( this.segment2 ).forEach( p => console.log(JSON.stringify(p))  );
     }
     handleMouseMove( m: MouseEvent ) {
         // todo: add 'move' method ?
@@ -189,8 +179,7 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
             this.ctx.arc(
                 curve.center.x, curve.center.y,
                 curve.radious,
-                curve.angleStart, curve.angleEnd,
-                curve.angleEnd < curve.angleStart // ccw?
+                curve.angleStart, curve.angleEnd
             );
         }
         this.ctx.stroke();

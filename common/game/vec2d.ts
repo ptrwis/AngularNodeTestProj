@@ -31,7 +31,8 @@ export class Vec2d{
     }
     
     angleBetween( v: Vec2d) : number {
-        return Math.acos( this.normalize().dot(v.normalize()) );
+        // return Math.acos( this.normalize().dot(v.normalize()) );
+        return this.sub(v).angle();
     }
     
     angle() : number{

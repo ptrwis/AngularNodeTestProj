@@ -181,8 +181,8 @@ export class GamePlayComponent implements AfterViewInit, OnInit, OnDestroy {
       this.ctx.arc(
         curve.center.x, curve.center.y,
         curve.radious,
-        curve.angleStart, curve.angleEnd,
-        curve.angleEnd < curve.angleStart // ccw?
+        curve.angleStart, curve.angleEnd
+        // curve.angleEnd < curve.angleStart // ccw?
       );
     }
     this.ctx.stroke();
