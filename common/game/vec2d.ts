@@ -4,6 +4,8 @@ export class Vec2d{
 
     }
 
+    copy() { return new Vec2d(this.x, this.y) }
+
     add( v: Vec2d ): Vec2d {
         return new Vec2d( this.x + v.x, this.y + v.y );
     }
@@ -22,7 +24,11 @@ export class Vec2d{
 
     dot( v: Vec2d): number{
         return this.x * v.x + this.y * v.y;
-      }
+    }
+
+    dist( v2: Vec2d ) {
+        return ((this.x - v2.x)**2 + (this.y - v2.y)**2)**0.5;
+    }
     
     angleBetween( v: Vec2d) : number {
         return Math.acos( this.normalize().dot(v.normalize()) );
