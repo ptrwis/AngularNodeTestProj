@@ -104,12 +104,11 @@ export class SimplePlayer {
     }
    
     centerOfRotation( state: PlayerState, ev: GameEventType ) {
-        const r = this.radious;
-        const pos = state.pos;
-        const dir = state.dir;
+        // state.dir.normal().mul(+this.radious).add(state.pos);
+        // state.dir.normal().mul(-this.radious).add(state.pos);
         switch ( ev ) {
-            case GameEventType.TURN_LEFT: return pos.sub( dir.normal().mul(r) );
-            case GameEventType.TURN_RIGHT: return pos.add( dir.normal().mul(r) );
+            case GameEventType.TURN_LEFT: return state.pos.sub( state.dir.normal().mul(this.radious) );
+            case GameEventType.TURN_RIGHT: return state.pos.add( state.dir.normal().mul(this.radious) );
             default:
                 console.log(`centerOfRotation: unknown event type ${GameEventType[ev]}`);
         }
@@ -143,9 +142,9 @@ export class SimplePlayer {
         }
     }
 
-    curveFromEndpoints( start: Vec2d, end: Vec2d, center: Vec2d ): Curve {
+    /* curveFromEndpoints( start: Vec2d, end: Vec2d, center: Vec2d ): Curve {
         return new Curve(center, this.radious, start.sub(center).angle(), end.sub(center).angle());
-    }
+    } */
 
     gameEventIntoShape( state: PlayerState, dt: number, eventType: GameEventType ): Shape {
         const w = this.w;

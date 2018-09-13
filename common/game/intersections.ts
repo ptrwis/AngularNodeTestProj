@@ -14,23 +14,22 @@ import { Shape } from "./shape";
  *   collisions [ PlayerSnapshot.GameEvent, Shape ]
  * 
  */
-class CursorState {
+class Cursor {
     pos: Vec2d;
     dir: Vec2d;
 }
-// TODO:
+// state of the cursor when 'event' arrived
 class PlayerSnapshot {
-    state: CursorState;
+    cursor: Cursor;
     event: GameEvent; // includes (time: number)
-    // moves/shapes // here or somewhere else
-    stateAt( time: number ) {
-      // or dt = now() - event.time  
-    } 
-    applyEvent( e: GameEvent ) {
-        
+}
+class Player {
+    head: PlayerSnapshot;
+    tail: Shape[]; // here or somewhere else
+    xhead( time: number ): Shape {
+        return intoShape( this.head, time );
     }
-    intoShape( cs: CursorState, time: number): Curve {
-        intoShape((TurnLeftEvent)this, time);
+    applyEvent( e: GameEvent ) {    
     }
 }
 
@@ -58,10 +57,10 @@ export abstract class AbstractGameEvent {
     }
     abstract equals(other: GameEvent);
     abstract intoShape( time: number ): Curve;
-    abstract stateAt( time: number ): CursorState;
+    abstract stateAt( time: number ): Cursor;
 }
 class TurnLeftEvent  extends AbstractGameEvent {
-    stateAt(time: number): CursorState {
+    stateAt(time: number): Cursor {
         throw new Error("Method not implemented.");
     }
     equals(other: GameEvent) {
