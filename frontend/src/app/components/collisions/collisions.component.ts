@@ -1,6 +1,9 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Input, AfterViewInit } from '@angular/core';
-import { Segment, Curve, Shape, Circle } from '../../../../../common/game/game';
 import { Vec2d } from '../../../../../common/game/vec2d';
+import { Shape } from '../../../../../common/game/shape';
+import { Segment } from '../../../../../common/game/segment';
+import { Curve } from '../../../../../common/game/curve';
+import { intersectionCurveCurve, intersectionCurveSegment, intersectionSegmentSegment } from '../../../../../common/game/intersections';
 
 @Component({
     selector: 'collisions',
@@ -140,20 +143,21 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.ctx.strokeStyle = '#ffffff';
         this.curve1.center = this.curve1.center.rotAround( 0.01, new Vec2d(this.width / 2, this.height / 2) );
         this.drawCurve(this.curve1);
+        this.ctx.strokeStyle = '#00ffff';
         this.curve2.center = this.curve2.center.rotAround( -0.01, new Vec2d(this.width / 2, this.height / 2) );
         this.drawCurve(this.curve2);
 
         this.ctx.strokeStyle = '#3333ff';
-        this.curve1.intersectionS( this.segment1 ).forEach( p => this.drawCircleAt(p)  );
-        this.curve1.intersectionS( this.segment2 ).forEach( p => this.drawCircleAt(p)  );
-        this.curve2.intersectionS( this.segment1 ).forEach( p => this.drawCircleAt(p)  );
-        this.curve2.intersectionS( this.segment2 ).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveSegment(this.curve1, this.segment1).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveSegment(this.curve1, this.segment2).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveSegment(this.curve2, this.segment1).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveSegment(this.curve2, this.segment2).forEach( p => this.drawCircleAt(p)  );
 
         this.ctx.strokeStyle = '#00ff00';
-        this.curve1.intersectionC( this.curve2 ).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveCurve( this.curve1, this.curve2 ).forEach( p => this.drawCircleAt(p)  );
 
         this.ctx.strokeStyle = '#ff0000';
-        this.segment1.intersectionS( this.segment2 ).forEach( p => this.drawCircleAt(p)  );
+        intersectionSegmentSegment( this.segment1, this.segment2 ).forEach( p => this.drawCircleAt(p)  );
 
         if (this.isRunning) {
             requestAnimationFrame(this.drawOnCanvas.bind(this));

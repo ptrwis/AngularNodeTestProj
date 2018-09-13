@@ -2,10 +2,12 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Component, OnInit, AfterViewInit, ViewChild, Input, ElementRef, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { WebsocketService } from '../../services/webosocket.service';
-import { SimplePlayer, PlayerState, GameEvent, GameEventType, Segment, Curve, Shape, BRUSH_STATE } from '../../../../../common/game/game';
+import { SimplePlayer, PlayerState, GameEvent, GameEventType, BRUSH_STATE } from '../../../../../common/game/game';
 import { LeaveTheRoomCmd } from '../../../../../common/protocol/leave_room';
 import { ClickCounter } from './click_counter';
-import { THIS_EXPR } from '@angular/compiler/src/output/output_ast';
+import { Shape } from '../../../../../common/game/shape';
+import { Segment } from '../../../../../common/game/segment';
+import { Curve } from '../../../../../common/game/curve';
 
 @Component({
   selector: 'gameplay',

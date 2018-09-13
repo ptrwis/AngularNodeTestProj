@@ -1,5 +1,3 @@
-import { Vec2d } from "./vec2d";
-
 /**
  * Like on comment above, to know foreign player's current
  * position we only need he's last event and snapshot from that moment

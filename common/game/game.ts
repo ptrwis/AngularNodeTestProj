@@ -1,4 +1,7 @@
 import { Vec2d } from "./vec2d";
+import { Shape } from "./shape";
+import { Curve } from "./curve";
+import { Segment } from "./segment";
 
 /**
  * 
@@ -25,174 +28,15 @@ export class GameEvent {
         return this.time === other.time && this.eventType === other.eventType;
     }
 }
-
-export abstract class Shape {}
-export class Segment implements Shape {
-    constructor( public start: Vec2d, 
-                 public end: Vec2d ) { }
-
-    copy() { return new Segment(this.start.copy(), this.end.copy()); }
-
-    //a() { return this.end.sub(this.start).angle(); }
-    a() { return (this.end.y-this.start.y)/(this.end.x-this.start.x); }
-
-    b(a:number) { return this.start.y - a * this.start.x; }
-
-    intersectionS( s: Segment ): Vec2d[] {
-        const a1 = this.a();
-        const a2 = s.a();
-        /* if( a1 - a2 < 0.000001 ) {
-            return [];
-        } */
-        const b1 = this.b(a1);
-        const b2 = s.b(a2);
-        const x = (b2 - b1)/(a1 - a2);
-        const y = a1 * x + b1;
-        const p = new Vec2d(x, y);
-        return this.inDomain(p) && s.inDomain(p) ? [p] : [];
-    }
-
-    inDomain( p: Vec2d ) {
-        const xs = [ +this.start.x, +this.end.x ].sort( (a, b) => a - b );
-        const ys = [ +this.start.y, +this.end.y ].sort( (a, b) => a - b );
-        return (xs[0] <= p.x && p.x <= xs[1]) && (ys[0] <= p.y && p.y <= ys[1]);
-    }
-
-    intersectionC( c: Curve ) {
-        return c.intersectionS(this);
-    }
-}
-export class Circle implements Shape {
-    constructor( public center: Vec2d,
-                 public radious: number) {
-    }
-    copy() { return new Circle(this.center, this.radious); }
-}
-export class Curve implements Shape {
-    constructor( public center: Vec2d,
-                 public radious: number,
-                 public angleStart: number,
-                 public angleEnd: number) {
-    }
-
-    copy() {
-        return new Curve(this.center.copy(), this.radious, this.angleEnd, this.angleEnd);
-    }
-
-    intersectionC( c: Curve ) {
-        const origin = this.center;
-        //
-        const d = this.center.dist(c.center);
-        const r = this.radious;
-        const R = c.radious;
-        if ( d > r + R ) {
-            return [];
-        }
-        const c1 = this.copy();
-        const c2 = c.copy();
-        // move both circles so that one of them will lie on (0,0)
-        c1.center = c1.center.sub(origin);
-        c2.center = c2.center.sub(origin);
-        // rotate second one to lie on OX. First doesn't change 'cus already lies on (0,0)
-        const a = c2.center.angle();
-        c2.center = c2.center.rot( - a );
-        // http://mathworld.wolfram.com/Circle-CircleIntersection.html
-        const x = (d**2 - R**2 + r**2) / (2*d);
-        const y1 = +((r**2 - x**2)**0.5);
-        const y2 = -((r**2 - x**2)**0.5);
-        let p1 = new Vec2d(x, y1);
-        let p2 = new Vec2d(x, y2);
-        // rotate and translate results back
-        p1 = p1.rot(+a).add(origin);
-        p2 = p2.rot(+a).add(origin);
-        // check domain
-        let result = [];
-        if ( this.isOnBorder(p1) && c.isOnBorder(p1) ) {
-            result.push(p1);
-        }
-        if ( this.isOnBorder(p2) && c.isOnBorder(p2) ) {
-            result.push(p2);
-        }
-        return result;
-    }
-
-    isOnBorder( p: Vec2d ) {
-        const a = p.angleBetween(this.center);
-        const start = this.normalizeAngle(this.angleStart);
-        const end = this.normalizeAngle(this.angleEnd);
-        if( start < end )
-            return start <= a && a <= end;
-        else 
-            return end <= a && a <= start;
-    }
-    normalizeAngle( rad: number ) {
-        rad %= (2*Math.PI);
-        return rad >= 0 ? rad : rad += 2 * Math.PI;
-    }
-    
-    intersectionS( s: Segment ): Vec2d[] {
-        const start = s.start.sub(this.center);
-        const end = s.end.sub(this.center);
-        // 1. find intercetion of line and full circle
-        // http://mathworld.wolfram.com/Circle-LineIntersection.html
-        const r = this.radious;
-        const x1 = start.x, y1 = start.y, 
-              x2 = end.x,   y2 = end.y;
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const dr = ( dx**2 + dy**2 )**0.5;
-        const D = x1 * y2 - x2 * y1;
-        const discriminant = r**2 * dr**2 - D**2;
-        if ( discriminant < 0 ) { // no intersection
-            return [];
-        } else if ( discriminant < 0.000001 ) { // tangent
-            const x = (D * dy) / dr**2;
-            const y = (-D * dx) / dr**2;
-            const p = new Vec2d(x,y);
-            // move back
-            if ( this.isOnBorder(p) && s.inDomain(p) ) {
-                return [p.add(this.center)];
-            }else{
-                return [];
-            }
-            // 2. TODO: check domains of shapes (segment's start and end and curve's angles)
-        } else if ( discriminant > 0.000001 ) { // intersection
-            // p1
-            const x1 = (D * dy + Math.sign(dy) * dx * discriminant**0.5 ) / dr**2;
-            const y1 = (-D * dx + Math.abs(dy) * discriminant**0.5 ) / dr**2;
-            let p1 = new Vec2d(x1,y1);
-            // p2
-            const x2 = (D * dy - Math.sign(dy) * dx * discriminant**0.5 ) / dr**2;
-            const y2 = (-D * dx - Math.abs(dy) * discriminant**0.5 ) / dr**2;
-            let p2 = new Vec2d(x2,y2);
-            // move back
-            p1 = p1.add(this.center);
-            p2 = p2.add(this.center);
-            // check domain
-            let result = [];
-            if ( this.isOnBorder(p1) && s.inDomain(p1) ) {
-                result.push(p1);
-            }
-            if ( this.isOnBorder(p2) && s.inDomain(p2) ) {
-                result.push(p2);
-            }
-            return result;
-        }
-    }
-}
 /**
  * position and direction of the head
  */
 export class PlayerState {
-    pos: Vec2d;
-    dir: Vec2d;
-    constructor(pos: Vec2d, dir: Vec2d) {
-        this.pos = pos;
-        this.dir = dir;
-    }
+    constructor( public pos: Vec2d, public dir: Vec2d) { }
 }
+
 export class SimplePlayer {
-    
+
     shapes: Shape[];
 
     lastState: PlayerState;
