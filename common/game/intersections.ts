@@ -4,19 +4,6 @@ import { Curve } from "./curve";
 import { GameEvent, GameEventType } from "./game";
 import { Shape } from "./shape";
 
-/**
- * 
- * Shape <-> PlayerSnapshot (= Cursor + GameEvent)
- * AbstractGameEvent <- ConcreteEvent (?)
- * draw(shape)
- * intersect(shape1, shape2)
- * shape = intoShape( snapshot )
- * crash( snap1, snap2 )
- * 
- *  intoShape( time: number ): Curve;
- *  abstract stateAt( time: number ): Cursor;
- * 
- */
 class Cursor {
     pos: Vec2d;
     dir: Vec2d;
@@ -28,6 +15,7 @@ class PlayerSnapshot {
 }
 class Player {
     head: PlayerSnapshot;
+    // neck: Shape[] or PlayerSnapshot[] // unconfirmed moves
     tail: Shape[]; // here or somewhere else
     xhead( time: number ): Shape {
         return intoShape( this.head, time );
@@ -36,9 +24,27 @@ class Player {
     }
 }
 
+
 declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
 declare function intersect( p1: PlayerSnapshot, p2: PlayerSnapshot ) ; // delegates to intersect(Shape,Shape) 
 declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
+
+/**
+ * { cursor, event, period }
+ * event.intoShape( cursor, period->dt )
+ * event.state( cursor, period->dt )
+ * 
+ * PlayerSnapshot = {Cursor + GameEvent}[+dt] // timestamp+dt -> period
+ * AbstractGameEvent <- ConcreteEvent (?)
+ * PlayerSnapshot.intoShape(dt) can delegate to GameEvent.intoShape(this, dt)
+ * 
+ * draw(shape)
+ * intersect(shape1, shape2)
+ * shape = intoShape( snapshot, dt )
+ * crash( snap1, snap2 ) - to know who crashed who, timestamps are needed
+ * cursor = stateAt( PlayerSnapshot, time: number )
+ * 
+ */
 
 class Crash {
     whoDied: Player;
@@ -67,13 +73,19 @@ function checkCrash( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number
 
 // POC, AbstractGameEvent <- TurnLeftEvent
 export abstract class AbstractGameEvent {
+    // timestamp + dt? we can increase dt of head on every main loop iteration
+    dt: number;
     constructor( public time: number,
                  public snapRef: PlayerSnapshot,
                  public eventType: GameEventType ) {
+        this.dt = 0;
     }
-    abstract equals(other: GameEvent);
+    abstract equals( other: GameEvent );
     abstract intoShape( time: number ): Curve;
     abstract stateAt( time: number ): Cursor;
+    update( dt: number ) {
+        this.dt += dt;
+    }
 }
 class TurnLeftEvent  extends AbstractGameEvent {
     intoShape(time: number): Curve {
