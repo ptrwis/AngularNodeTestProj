@@ -26,23 +26,22 @@ class Player {
 
 
 declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
+    declare function intoShape( c: Cursor, e: TurnLeftEvent, time: number ): Curve ;
+    declare function intoShape( c: Cursor, e: TurnRightEvent, time: number ): Curve ;
+    declare function intoShape( c: Cursor, e: Str8AheadEvent, time: number ): Curve ;
 declare function intersect( p1: PlayerSnapshot, p2: PlayerSnapshot ) ; // delegates to intersect(Shape,Shape) 
 declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
 
 /**
- * { cursor, event, period }
- * event.intoShape( cursor, period->dt )
- * event.state( cursor, period->dt )
+ * CursorSnapshot{ cursor, timestamp }
+ * GameEvent{ type, timestamp }
+ * let tuple: [Shape, Cursor] = event_fun( CursorSnapshot, GameEvent, dt );
  * 
- * PlayerSnapshot = {Cursor + GameEvent}[+dt] // timestamp+dt -> period
- * AbstractGameEvent <- ConcreteEvent (?)
  * PlayerSnapshot.intoShape(dt) can delegate to GameEvent.intoShape(this, dt)
  * 
  * draw(shape)
- * intersect(shape1, shape2)
- * shape = intoShape( snapshot, dt )
- * crash( snap1, snap2 ) - to know who crashed who, timestamps are needed
- * cursor = stateAt( PlayerSnapshot, time: number )
+ * intersect( shape1, shape2 )
+ * crash( snap1+gameevent1, snap2+gameevent2 ) - to know who crashed who, timestamps are needed
  * 
  */
 
