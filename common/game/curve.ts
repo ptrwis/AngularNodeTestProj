@@ -28,4 +28,8 @@ export class Curve implements Shape {
         return rad >= 0 ? rad : rad += 2 * Math.PI;
     }
 
+    length() {
+        return (this.angleStart - this.angleEnd) * this.radious;
+    }
+
 }

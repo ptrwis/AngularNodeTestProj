@@ -1,109 +1,56 @@
 import {Vec2d} from "./vec2d";
 import { Segment } from "./segment";
 import { Curve } from "./curve";
-import { GameEvent, GameEventType } from "./game";
 import { Shape } from "./shape";
 
-class Cursor {
+class PlayerSnapshot {
+    // structure:
     pos: Vec2d;
     dir: Vec2d;
+    timestamp: number;
+    event: GameEventType;
+    // interface:
+    state( dt: number );
+    applyEvent( e: AbstractMoveEvent );
+    intoShape( dt: number ); // -> outside
+    timeToReach( pos: Vec2d ); // -> outside
 }
-// state of the cursor when 'event' arrived
-class PlayerSnapshot {
-    cursor: Cursor;
-    event: GameEvent; // includes time: number
-}
+
 class Player {
     head: PlayerSnapshot;
-    // neck: Shape[] or PlayerSnapshot[] // unconfirmed moves
-    tail: Shape[]; // here or somewhere else
-    xhead( time: number ): Shape {
-        return intoShape( this.head, time );
-    }
-    applyEvent( e: GameEvent ) {    
-    }
+    tail: Shape[];
 }
 
-
+// PlayerSnapshot dispatches counting to eg TurnLeftEvent basing on the type of event
+class TurnRightEvent{ w: number; }; // w is property of 'turn' event?
+declare class Str8AheadEvent{};
+// free function or method of... what? PlayerSnapshot? MoveEvent?
 declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
-    declare function intoShape( c: Cursor, e: TurnLeftEvent, time: number ): Curve ;
-    declare function intoShape( c: Cursor, e: TurnRightEvent, time: number ): Curve ;
-    declare function intoShape( c: Cursor, e: Str8AheadEvent, time: number ): Curve ;
-declare function intersect( p1: PlayerSnapshot, p2: PlayerSnapshot ) ; // delegates to intersect(Shape,Shape) 
-declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
-
-/**
- * CursorSnapshot{ cursor, timestamp }
- * GameEvent{ type, timestamp }
- * let tuple: [Shape, Cursor] = event_fun( CursorSnapshot, GameEvent, dt );
- * 
- * PlayerSnapshot.intoShape(dt) can delegate to GameEvent.intoShape(this, dt)
- * 
- * draw(shape)
- * intersect( shape1, shape2 )
- * crash( snap1+gameevent1, snap2+gameevent2 ) - to know who crashed who, timestamps are needed
- * 
- */
+    // specialisation for every event
+    declare function intoCurve( ps: PlayerSnapshot, dt: number ): Curve ;
+    declare function intoSegment( ps: PlayerSnapshot, dt: number ): Segment ;
+// declare function intersect( p1: PlayerSnapshot, p2: PlayerSnapshot ) ; // delegates to intersect(Shape,Shape) 
+// declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
 
 class Crash {
     whoDied: Player;
-    whoSurvived: Player;
+    whoKilled: Player;
     when: number;
     place: Vec2d;
+    // dir: Vec2d; direction of victim at the moment of crash
 }
-/**
- * Which player hit which one, where and when.
- * 
- * @param ps1 
- * @param ps2 
- */
-function checkCrash( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash? {
+
+function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
     /*
-        s1 = ps1.toShape( timestamp );
-        s2 = ps2.toShape( timestamp );
+        s1 = intoShape( ps1, timestamp - ps1.event.timestamp );
+        s2 = intoShape( ps2, timestamp - ps2.event.timestamp );
         cps[] = intersections(s1, s2);
-        firstCp = cps.sort( (cp1, cp2) => cp1.getTime( ) - cp2.getTime( ) );
-        k1 = ps1.distance( firstCp ); // distance might be a time
-        k2 = ps2.distance( firstCp );
-        player with lower k loses
+        firstCp = cps.sort( (cp1, cp2) => cp1.getTime( ) - cp2.getTime( ) )[0]
+        k1 = timeToReach( ps1, firstCp );
+        k2 = timeToReach( ps2, firstCp );
+        return k1 < k2 ? Crash(ps1, ps2, k1, firstCp) : Crash(ps2, ps1, k2, firstCp);
     */
 }
-
-
-// POC, AbstractGameEvent <- TurnLeftEvent
-export abstract class AbstractGameEvent {
-    // timestamp + dt? we can increase dt of head on every main loop iteration
-    dt: number;
-    constructor( public time: number,
-                 public snapRef: PlayerSnapshot,
-                 public eventType: GameEventType ) {
-        this.dt = 0;
-    }
-    abstract equals( other: GameEvent );
-    abstract intoShape( time: number ): Curve;
-    abstract stateAt( time: number ): Cursor;
-    update( dt: number ) {
-        this.dt += dt;
-    }
-}
-class TurnLeftEvent  extends AbstractGameEvent {
-    intoShape(time: number): Curve {
-        throw new Error("Method not implemented.");
-    }
-    stateAt(time: number): Cursor {
-        throw new Error("Method not implemented.");
-    }
-    equals(other: GameEvent) {
-        throw new Error("Method not implemented.");
-    }
-    constructor( snapRef: PlayerSnapshot, time: number ) {
-        super(time, snapRef, GameEventType.TURN_LEFT);
-    }
-}
-
-
-
-
 
 /**
  * 
