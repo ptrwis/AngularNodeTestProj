@@ -12,19 +12,15 @@ class PlayerSnapshot {
     // interface:
     state( dt: number );
     applyEvent( e: AbstractMoveEvent );
-    intoShape( dt: number ); // -> outside
-    timeToReach( pos: Vec2d ); // -> outside
 }
+declare function intoShape( PlayerSnapshot, dt: number );
+declare function timeToReach( PlayerSnapshot, pos: Vec2d );
 
 class Player {
     head: PlayerSnapshot;
     tail: Shape[];
 }
 
-// PlayerSnapshot dispatches counting to eg TurnLeftEvent basing on the type of event
-class TurnRightEvent{ w: number; }; // w is property of 'turn' event?
-declare class Str8AheadEvent{};
-// free function or method of... what? PlayerSnapshot? MoveEvent?
 declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
     // specialisation for every event
     declare function intoCurve( ps: PlayerSnapshot, dt: number ): Curve ;
