@@ -126,13 +126,13 @@ export class SimplePlayer {
                 return new PlayerState(newPos, dir);
             }
             case GameEventType.TURN_LEFT: {
-                const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
+                const anchor = this.centerOfRotation( state, eventType );
                 const newPos = pos.rotAround( -w * dt, anchor);
                 const newDir = newPos.sub(anchor).normal().mul(-1);
                 return new PlayerState(newPos, newDir);
             }
             case GameEventType.TURN_RIGHT: {
-                const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
+                const anchor = this.centerOfRotation( state, eventType );
                 const newPos = pos.rotAround( +w * dt, anchor);
                 const newDir = newPos.sub(anchor).normal().mul(+1);
                 return new PlayerState(newPos, newDir);

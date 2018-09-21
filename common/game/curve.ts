@@ -8,9 +8,7 @@ export class Curve implements Shape {
                  public angleEnd: number) {
     }
 
-    copy() {
-        return new Curve(this.center.copy(), this.radious, this.angleStart, this.angleEnd);
-    }
+    copy = () => new Curve(this.center.copy(), this.radious, this.angleStart, this.angleEnd);
 
     isInDomain( p: Vec2d ) {
         const a = p.angleBetween(this.center);
@@ -28,8 +26,6 @@ export class Curve implements Shape {
         return rad >= 0 ? rad : rad += 2 * Math.PI;
     }
 
-    length() {
-        return (this.angleStart - this.angleEnd) * this.radious;
-    }
+    length = () => (this.angleStart - this.angleEnd) * this.radious;
 
 }

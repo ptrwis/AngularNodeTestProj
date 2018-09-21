@@ -2,6 +2,7 @@ import {Vec2d} from "./vec2d";
 import { Segment } from "./segment";
 import { Curve } from "./curve";
 import { Shape } from "./shape";
+import { GameEventType } from "./game";
 
 class PlayerSnapshot {
     // structure:
@@ -9,16 +10,17 @@ class PlayerSnapshot {
     dir: Vec2d;
     timestamp: number;
     event: GameEventType;
+    v: number; // libnear velocity
     // interface:
-    state( dt: number );
-    applyEvent( e: AbstractMoveEvent );
+    state( dt: number ) { }
+    w = () => this.v / radious;
 }
 declare function intoShape( PlayerSnapshot, dt: number );
-declare function timeToReach( PlayerSnapshot, pos: Vec2d );
 
 class Player {
     head: PlayerSnapshot;
     tail: Shape[];
+    applyEvent( e: GameEventType ) { }
 }
 
 declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
@@ -29,23 +31,68 @@ declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
 // declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
 
 class Crash {
-    whoDied: Player;
-    whoKilled: Player;
-    when: number;
-    place: Vec2d;
-    // dir: Vec2d; direction of victim at the moment of crash
+    constructor(
+        public whoDied: Player,
+        public whoKilled: Player,
+        public when: number,
+        public place: Vec2d
+        // dir: Vec2d; direction of victim at the moment of crash (?-already in whoDied.dir)
+    ) {
+    }
 }
 
+/**
+ * 
+ * @param ps1 
+ * @param ps2 
+ * @param timestamp 
+ */
 function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
-    /*
-        s1 = intoShape( ps1, timestamp - ps1.event.timestamp );
-        s2 = intoShape( ps2, timestamp - ps2.event.timestamp );
-        cps[] = intersections(s1, s2);
-        firstCp = cps.sort( (cp1, cp2) => cp1.getTime( ) - cp2.getTime( ) )[0]
-        k1 = timeToReach( ps1, firstCp );
-        k2 = timeToReach( ps2, firstCp );
-        return k1 < k2 ? Crash(ps1, ps2, k1, firstCp) : Crash(ps2, ps1, k2, firstCp);
-    */
+
+    /**
+     * Returns time to achive pos starting from ps.
+     * In we assume pos is on the path of ps1.
+     * @param ps1 
+     * @param ps2 
+     * @param timestamp 
+     */
+    function timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
+        if( ps.event === GameEventType.STR8_FORWARD ) {
+            return ps.v / ps.pos.dist( pos );
+        }
+        if( ps.event === GameEventType.TURN_LEFT || ps.event === GameEventType.TURN_RIGHT ) {
+            // 100 is whatever dt [ms], we only need this to transform PlayerSnapshot into Curve and get it's center
+            const center = intoCurve( ps, 100 ).center;
+            const a = ps.pos.angleBetween(center);
+            const b = pos.angleBetween(center);
+            return Math.abs(a - b) / ps.w();
+        }
+    }
+
+    const s1 = intoShape( ps1, timestamp - ps1.timestamp );
+    const s2 = intoShape( ps2, timestamp - ps2.timestamp );
+    return intersections(s1, s2)
+    .map( i => { 
+        const t1 = timeToReach(s1, i);
+        const t2 = timeToReach(s2, i);
+        return new Crash( 
+            t1 > t2 ? s1 : s2, 
+            t1 > t2 ? s2 : s1, 
+            t1 < t2 ? t1 : t2,
+            i
+        );
+    })
+    .sort( (c1, c2) => c1.when - c2.when )
+    .shift(); // take first
+}
+
+function intersections( s1: Shape, s2: Shape ): Vec2d[] {
+    // switch between types
+    // call appropriate
+    // * intersectionCurveSegment
+    // * intersectionCurveCurve
+    // * intersectionSegmentSegment
+    return [];
 }
 
 /**
