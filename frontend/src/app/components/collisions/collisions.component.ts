@@ -3,7 +3,11 @@ import { Vec2d } from '../../../../../common/game/vec2d';
 import { Shape } from '../../../../../common/game/shape';
 import { Segment } from '../../../../../common/game/segment';
 import { Curve } from '../../../../../common/game/curve';
-import { intersectionCurveCurve, intersectionCurveSegment, intersectionSegmentSegment } from '../../../../../common/game/intersections';
+import { intersectionCurveCurve,
+         intersectionCurveSegment,
+         intersectionSegmentSegment,
+         crashTest } from '../../../../../common/game/intersections';
+import { CanvasRenderer } from '../renderer/canvas.renderer';
 
 @Component({
     selector: 'collisions',
@@ -46,19 +50,19 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
     curve1: Curve;
     curve2: Curve;
 
+    renderer: CanvasRenderer;
+
     ngOnInit(): void {
     }
 
     ngAfterViewInit(): void {
         this.canvas = this.canvasRef.nativeElement;
         this.ctx = this.canvas.getContext('2d');
-        // set the width and height
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
+        this.renderer = new CanvasRenderer(this.canvas, this.ctx, this.width, this.height);
         this.ctx.fillStyle = '#000000';
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 6;
-        this.clearScreen();
+        this.renderer.clearScreen();
         this.drawOnCanvas();
     }
 
@@ -130,75 +134,38 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     private drawOnCanvas() {
-        this.clearScreen();
+        this.renderer.clearScreen();
 
         this.ctx.strokeStyle = '#ff44ff';
         this.segment1 = this.rotate(this.segment1, 0.01);
-        this.drawLine( this.segment1 );
+        this.renderer.drawSegment( this.segment1 );
 
         this.ctx.strokeStyle = '#ffff22';
         this.segment2 = this.rotate(this.segment2, -0.01);
-        this.drawLine( this.segment2 );
+        this.renderer.drawSegment( this.segment2 );
 
         this.ctx.strokeStyle = '#ffffff';
         this.curve1.center = this.curve1.center.rotAround( 0.01, new Vec2d(this.width / 2, this.height / 2) );
-        this.drawCurve(this.curve1);
+        this.renderer.drawCurve(this.curve1);
         this.ctx.strokeStyle = '#00ffff';
         this.curve2.center = this.curve2.center.rotAround( -0.01, new Vec2d(this.width / 2, this.height / 2) );
-        this.drawCurve(this.curve2);
+        this.renderer.drawCurve(this.curve2);
 
         this.ctx.strokeStyle = '#3333ff';
-        intersectionCurveSegment(this.curve1, this.segment1).forEach( p => this.drawCircleAt(p)  );
-        intersectionCurveSegment(this.curve1, this.segment2).forEach( p => this.drawCircleAt(p)  );
-        intersectionCurveSegment(this.curve2, this.segment1).forEach( p => this.drawCircleAt(p)  );
-        intersectionCurveSegment(this.curve2, this.segment2).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveSegment(this.curve1, this.segment1).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionCurveSegment(this.curve1, this.segment2).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionCurveSegment(this.curve2, this.segment1).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionCurveSegment(this.curve2, this.segment2).forEach( p => this.renderer.drawCircle(p)  );
 
         this.ctx.strokeStyle = '#00ff00';
-        intersectionCurveCurve( this.curve1, this.curve2 ).forEach( p => this.drawCircleAt(p)  );
+        intersectionCurveCurve( this.curve1, this.curve2 ).forEach( p => this.renderer.drawCircle(p)  );
 
         this.ctx.strokeStyle = '#ff0000';
-        intersectionSegmentSegment( this.segment1, this.segment2 ).forEach( p => this.drawCircleAt(p)  );
+        intersectionSegmentSegment( this.segment1, this.segment2 ).forEach( p => this.renderer.drawCircle(p)  );
 
         if (this.isRunning) {
             requestAnimationFrame(this.drawOnCanvas.bind(this));
         }
     }
-
-    clearScreen() {
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-
-    drawLine(segment: Segment) {
-        this.ctx.beginPath();
-        {
-            this.ctx.moveTo(segment.start.x, segment.start.y);
-            this.ctx.lineTo(segment.end.x, segment.end.y);
-        }
-        this.ctx.stroke();
-    }
-
-    drawCurve(curve: Curve) {
-        this.ctx.beginPath();
-        {
-            this.ctx.arc(
-                curve.center.x, curve.center.y,
-                curve.radious,
-                curve.angleStart, curve.angleEnd
-            );
-        }
-        this.ctx.stroke();
-    }
-
-    drawCircleAt( pos: Vec2d ) {
-        this.ctx.beginPath();
-        {
-          this.ctx.arc(
-            pos.x, pos.y,
-            5, // radious
-            0, 2 * Math.PI // full circle
-          );
-        }
-        this.ctx.stroke();
-      }
 
 }

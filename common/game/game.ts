@@ -107,8 +107,8 @@ export class SimplePlayer {
         // state.dir.normal().mul(+this.radious).add(state.pos);
         // state.dir.normal().mul(-this.radious).add(state.pos);
         switch ( ev ) {
-            case GameEventType.TURN_LEFT: return state.pos.sub( state.dir.normal().mul(this.radious) );
-            case GameEventType.TURN_RIGHT: return state.pos.add( state.dir.normal().mul(this.radious) );
+            case GameEventType.TURN_LEFT:  return state.pos.add( state.dir.normal().mul( - this.radious) );
+            case GameEventType.TURN_RIGHT: return state.pos.add( state.dir.normal().mul( + this.radious) );
             default:
                 console.log(`centerOfRotation: unknown event type ${GameEventType[ev]}`);
         }
@@ -127,14 +127,14 @@ export class SimplePlayer {
             }
             case GameEventType.TURN_LEFT: {
                 const anchor = this.centerOfRotation( state, eventType );
-                const newPos = pos.rotAround( -w * dt, anchor);
-                const newDir = newPos.sub(anchor).normal().mul(-1);
+                const newPos = pos.rotAround( - w * dt, anchor);
+                const newDir = newPos.sub(anchor).normal().mul( -1 );
                 return new PlayerState(newPos, newDir);
             }
             case GameEventType.TURN_RIGHT: {
                 const anchor = this.centerOfRotation( state, eventType );
-                const newPos = pos.rotAround( +w * dt, anchor);
-                const newDir = newPos.sub(anchor).normal().mul(+1);
+                const newPos = pos.rotAround( + w * dt, anchor);
+                const newDir = newPos.sub(anchor).normal().mul( +1 );
                 return new PlayerState(newPos, newDir);
             }
             default:

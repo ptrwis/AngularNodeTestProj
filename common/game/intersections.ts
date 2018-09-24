@@ -4,6 +4,9 @@ import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { GameEventType } from "./game";
 
+/**
+ * 
+ */
 class PlayerSnapshot {
     // structure:
     pos: Vec2d;
@@ -13,24 +16,62 @@ class PlayerSnapshot {
     v: number; // libnear velocity
     // interface:
     state( dt: number ) { }
-    w = () => this.v / radious;
+    w = () => this.v / (0.5 * this.v); // w = v / r and radious is a function of velocity
 }
-declare function intoShape( PlayerSnapshot, dt: number );
 
+/**
+ * 
+ */
 class Player {
     head: PlayerSnapshot;
     tail: Shape[];
     applyEvent( e: GameEventType ) { }
 }
 
-declare function intoShape( ps: PlayerSnapshot, time ): Shape ;
-    // specialisation for every event
-    declare function intoCurve( ps: PlayerSnapshot, dt: number ): Curve ;
-    declare function intoSegment( ps: PlayerSnapshot, dt: number ): Segment ;
-// declare function intersect( p1: PlayerSnapshot, p2: PlayerSnapshot ) ; // delegates to intersect(Shape,Shape) 
-// declare function intersect( p1: PlayerSnapshot, p2: Curve ) ; // jw. for collisions with static shapes
 
-class Crash {
+function intoShape( ps: PlayerSnapshot, time: number ): Shape {
+    if( ps.event === GameEventType.STR8_FORWARD )
+        return intoSegment(ps, time);
+    if( ps.event === GameEventType.TURN_LEFT || ps.event === GameEventType.TURN_RIGHT )
+        return intoCurve(ps, time);
+    throw new Error( 'unhandled type' );
+}
+
+function intoCurve( ps: PlayerSnapshot, dt: number ): Curve {
+    switch( ps.event ) {
+        case GameEventType.TURN_LEFT: {
+            const anchor = this.centerOfRotation( ps, GameEventType.TURN_LEFT );
+            let angleStart = ps.pos.angleBetween(anchor);
+            // this way curves are always clock-wise
+            // const angleEnd = angleStart - w * dt;
+            const angleEnd = angleStart;
+            angleStart = angleStart - ps.w() * dt;
+            return new Curve( anchor, this.radious, angleStart, angleEnd  );
+
+            /* const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
+            const newState = this.countState(state, dt, eventType);
+            return this.curveFromEndpoints( state.pos, newState.pos, anchor ); */
+        }
+        case GameEventType.TURN_RIGHT: {
+            const anchor = this.centerOfRotation( ps, GameEventType.TURN_RIGHT );
+            const angleStart = ps.pos.angleBetween(anchor);
+            const angleEnd = angleStart + ps.w() * dt;
+            return new Curve( anchor, this.radious, angleStart, angleEnd );
+            /*const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
+            const newState = this.countState(state, dt, eventType);
+            return this.curveFromEndpoints( state.pos, newState.pos, anchor );*/
+        }
+    }
+}
+
+function intoSegment( ps: PlayerSnapshot, dt: number ): Segment {
+    return new Segment( ps.pos, ps.pos.add(ps.dir.mul(this.velocity * dt)));
+}
+
+/**
+ * 
+ */
+export class Crash {
     constructor(
         public whoDied: Player,
         public whoKilled: Player,
@@ -47,7 +88,8 @@ class Crash {
  * @param ps2 
  * @param timestamp 
  */
-function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
+// export function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
+export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
 
     /**
      * Returns time to achive pos starting from ps.
@@ -69,30 +111,39 @@ function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number 
         }
     }
 
-    const s1 = intoShape( ps1, timestamp - ps1.timestamp );
-    const s2 = intoShape( ps2, timestamp - ps2.timestamp );
-    return intersections(s1, s2)
-    .map( i => { 
-        const t1 = timeToReach(s1, i);
-        const t2 = timeToReach(s2, i);
-        return new Crash( 
-            t1 > t2 ? s1 : s2, 
-            t1 > t2 ? s2 : s1, 
-            t1 < t2 ? t1 : t2,
-            i
-        );
-    })
-    .sort( (c1, c2) => c1.when - c2.when )
-    .shift(); // take first
+    return intersections(
+        intoShape( p1.head, timestamp - p1.head.timestamp ),
+        intoShape( p2.head, timestamp - p2.head.timestamp )
+    )
+        .map( i => { 
+            const t1 = timeToReach(p1.head, i);
+            const t2 = timeToReach(p2.head, i);
+            return new Crash( 
+                t1 < t2 ? p2 : p1, 
+                t1 < t2 ? p1 : p2, 
+                t1 < t2 ? t1 : t2,
+                i
+            );
+        })
+        .sort( (c1, c2) => c1.when - c2.when )
+        .shift(); // take first
 }
 
+/**
+ * 
+ * @param s1 
+ * @param s2 
+ */
 function intersections( s1: Shape, s2: Shape ): Vec2d[] {
-    // switch between types
-    // call appropriate
-    // * intersectionCurveSegment
-    // * intersectionCurveCurve
-    // * intersectionSegmentSegment
-    return [];
+    if ( s1 instanceof Curve && s2 instanceof Curve )
+        return intersectionCurveCurve(s1 as Curve, s2 as Curve);
+    if ( s1 instanceof Segment && s2 instanceof Segment )
+        return intersectionSegmentSegment(s1 as Segment, s2 as Segment);
+    if ( s1 instanceof Segment && s2 instanceof Curve )
+        return intersectionCurveSegment(s2 as Curve, s1 as Segment);
+    if ( s1 instanceof Curve && s2 instanceof Segment )
+        return intersectionCurveSegment(s1 as Curve, s2 as Segment);
+    throw new Error( 'unhandled type' );
 }
 
 /**
