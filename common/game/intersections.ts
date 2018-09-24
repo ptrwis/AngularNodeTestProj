@@ -4,6 +4,43 @@ import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { GameEventType } from "./game";
 
+abstract class AbstractEvent {
+    // pos: Vec2d;
+    // dir: Vec2d;
+    timestamp: number;
+    abstract state();
+    abstract intoShape();
+}
+class TurnLeftEvent extends AbstractEvent {
+    intoShape() {
+        throw new Error("Method not implemented.");
+    }
+    state() {
+        throw new Error("Method not implemented.");
+    }
+}
+class TurnRightEvent extends AbstractEvent {
+    intoShape() {
+        throw new Error("Method not implemented.");
+    }
+    state() {
+        throw new Error("Method not implemented.");
+    }
+}
+class Str8AheadEvent extends AbstractEvent {
+    intoShape() {
+        throw new Error("Method not implemented.");
+    }
+    state() {
+        throw new Error("Method not implemented.");
+    }
+}
+function intoCurveLeft( ae: TurnLeftEvent ) { }
+function intoCurveRight( ae: TurnRightEvent ) { }
+function intoSeg( ae: Str8AheadEvent ) { }
+function drawCurve( c: Curve ) {}
+function drawSegment( s: Segment ) {}
+
 /**
  * 
  */
@@ -37,6 +74,7 @@ function intoShape( ps: PlayerSnapshot, time: number ): Shape {
     throw new Error( 'unhandled type' );
 }
 
+// ... or introduce 'TurnLeftEvent', 'TurnRightEvent', 'Str8AheadEvent'
 function intoCurve( ps: PlayerSnapshot, dt: number ): Curve {
     switch( ps.event ) {
         case GameEventType.TURN_LEFT: {
