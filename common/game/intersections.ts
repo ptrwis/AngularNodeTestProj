@@ -4,14 +4,14 @@ import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { GameEventType } from "./game";
 
-abstract class AbstractEvent {
+abstract class AbstractMove {
     // pos: Vec2d;
     // dir: Vec2d;
     timestamp: number;
     abstract state();
     abstract intoShape();
 }
-class TurnLeftEvent extends AbstractEvent {
+class TurnLeftMove extends AbstractMove {
     intoShape() {
         throw new Error("Method not implemented.");
     }
@@ -19,7 +19,7 @@ class TurnLeftEvent extends AbstractEvent {
         throw new Error("Method not implemented.");
     }
 }
-class TurnRightEvent extends AbstractEvent {
+class TurnRightMove extends AbstractMove {
     intoShape() {
         throw new Error("Method not implemented.");
     }
@@ -27,7 +27,7 @@ class TurnRightEvent extends AbstractEvent {
         throw new Error("Method not implemented.");
     }
 }
-class Str8AheadEvent extends AbstractEvent {
+class Str8AheadMove extends AbstractMove {
     intoShape() {
         throw new Error("Method not implemented.");
     }
@@ -35,9 +35,9 @@ class Str8AheadEvent extends AbstractEvent {
         throw new Error("Method not implemented.");
     }
 }
-function intoCurveLeft( ae: TurnLeftEvent ) { }
-function intoCurveRight( ae: TurnRightEvent ) { }
-function intoSeg( ae: Str8AheadEvent ) { }
+function intoCurveLeft( ae: TurnLeftMove ) { }
+function intoCurveRight( ae: TurnRightMove ) { }
+function intoSeg( ae: Str8AheadMove ) { }
 function drawCurve( c: Curve ) {}
 function drawSegment( s: Segment ) {}
 
