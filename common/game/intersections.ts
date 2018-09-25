@@ -3,15 +3,32 @@ import { Segment } from "./segment";
 import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { GameEventType } from "./game";
-
+/**
+ * 
+ */
 abstract class AbstractMove {
     // pos: Vec2d;
     // dir: Vec2d;
     timestamp: number;
-    abstract state();
-    abstract intoShape();
+    abstract state( state: PlayerSnapshot );
+    abstract intoShape( ps: PlayerSnapshot, dt: number )
+    abstract timeToReach( ps: PlayerSnapshot, pos: Vec2d );
+    abstract intersect( x: Segment | Curve );
 }
+/**
+ * 
+ */
 class TurnLeftMove extends AbstractMove {
+    intersect( x: Segment | Curve ) {
+        // if x instanceof Segment ...
+        // if x instanceof Curve ...
+    }
+    timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
+        const center = this.centerOfRotation( ps );
+        const a = ps.pos.angleBetween(center);
+        const b = pos.angleBetween(center);
+        return Math.abs(a - b) / ps.w();
+    }
     centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( - this.radious) );
     intoShape( ps: PlayerSnapshot, dt: number ) {
         const anchor = this.centerOfRotation( ps );
@@ -29,25 +46,46 @@ class TurnLeftMove extends AbstractMove {
         return new PlayerState(newPos, newDir);
     }
 }
+/**
+ * 
+ */
 class TurnRightMove extends AbstractMove {
+    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( + this.radious) );
+    timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
+        const center = this.centerOfRotation( ps );
+        const a = ps.pos.angleBetween(center);
+        const b = pos.angleBetween(center);
+        return Math.abs(a - b) / ps.w();
+    }
     intoShape() {
-        throw new Error("Method not implemented.");
+        const anchor = this.centerOfRotation( state );
+        const angleStart = state.pos.angleBetween(anchor);
+        const angleEnd = angleStart + w * dt;
+        return new Curve( anchor, this.radious, angleStart, angleEnd );
+        /*const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
+        const newState = this.countState(state, dt, eventType);
+        return this.curveFromEndpoints( state.pos, newState.pos, anchor );*/
     }
     state() {
-        throw new Error("Method not implemented.");
+        const anchor = this.centerOfRotation( state, eventType );
+        const newPos = pos.rotAround( + w * dt, anchor);
+        const newDir = newPos.sub(anchor).normal().mul( +1 );
+        return new PlayerState(newPos, newDir);
     }
 }
+/**
+ * 
+ */
 class Str8AheadMove extends AbstractMove {
+    timeToReach = ( ps: PlayerSnapshot, pos: Vec2d ) => ps.v / ps.pos.dist( pos );
     intoShape() {
-        throw new Error("Method not implemented.");
+        return new Segment( state.pos, state.pos.add(state.dir.mul(this.velocity * dt)));
     }
     state() {
-        throw new Error("Method not implemented.");
+        const newPos = pos.add(dir.mul(v * dt));
+        return new PlayerState(newPos, dir);
     }
 }
-function intoCurveLeft( ae: TurnLeftMove ) { }
-function intoCurveRight( ae: TurnRightMove ) { }
-function intoSeg( ae: Str8AheadMove ) { }
 function drawCurve( c: Curve ) {}
 function drawSegment( s: Segment ) {}
 
@@ -75,47 +113,6 @@ class Player {
     applyEvent( e: GameEventType ) { }
 }
 
-
-function intoShape( ps: PlayerSnapshot, time: number ): Shape {
-    if( ps.event === GameEventType.STR8_FORWARD )
-        return intoSegment(ps, time);
-    if( ps.event === GameEventType.TURN_LEFT || ps.event === GameEventType.TURN_RIGHT )
-        return intoCurve(ps, time);
-    throw new Error( 'unhandled type' );
-}
-
-// ... or introduce 'TurnLeftEvent', 'TurnRightEvent', 'Str8AheadEvent'
-function intoCurve( ps: PlayerSnapshot, dt: number ): Curve {
-    switch( ps.event ) {
-        case GameEventType.TURN_LEFT: {
-            const anchor = this.centerOfRotation( ps, GameEventType.TURN_LEFT );
-            let angleStart = ps.pos.angleBetween(anchor);
-            // this way curves are always clock-wise
-            // const angleEnd = angleStart - w * dt;
-            const angleEnd = angleStart;
-            angleStart = angleStart - ps.w() * dt;
-            return new Curve( anchor, this.radious, angleStart, angleEnd  );
-
-            /* const anchor = this.centerOfRotation( state, GameEventType.TURN_LEFT );
-            const newState = this.countState(state, dt, eventType);
-            return this.curveFromEndpoints( state.pos, newState.pos, anchor ); */
-        }
-        case GameEventType.TURN_RIGHT: {
-            const anchor = this.centerOfRotation( ps, GameEventType.TURN_RIGHT );
-            const angleStart = ps.pos.angleBetween(anchor);
-            const angleEnd = angleStart + ps.w() * dt;
-            return new Curve( anchor, this.radious, angleStart, angleEnd );
-            /*const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
-            const newState = this.countState(state, dt, eventType);
-            return this.curveFromEndpoints( state.pos, newState.pos, anchor );*/
-        }
-    }
-}
-
-function intoSegment( ps: PlayerSnapshot, dt: number ): Segment {
-    return new Segment( ps.pos, ps.pos.add(ps.dir.mul(this.velocity * dt)));
-}
-
 /**
  * 
  */
@@ -138,26 +135,6 @@ export class Crash {
  */
 // export function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
 export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
-
-    /**
-     * Returns time to achive pos starting from ps.
-     * In we assume pos is on the path of ps1.
-     * @param ps1 
-     * @param ps2 
-     * @param timestamp 
-     */
-    function timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
-        if( ps.event === GameEventType.STR8_FORWARD ) {
-            return ps.v / ps.pos.dist( pos );
-        }
-        if( ps.event === GameEventType.TURN_LEFT || ps.event === GameEventType.TURN_RIGHT ) {
-            // 100 is whatever dt [ms], we only need this to transform PlayerSnapshot into Curve and get it's center
-            const center = intoCurve( ps, 100 ).center;
-            const a = ps.pos.angleBetween(center);
-            const b = pos.angleBetween(center);
-            return Math.abs(a - b) / ps.w();
-        }
-    }
 
     return intersections(
         intoShape( p1.head, timestamp - p1.head.timestamp ),
