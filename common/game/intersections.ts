@@ -12,8 +12,9 @@ abstract class AbstractMove {
     abstract intoShape();
 }
 class TurnLeftMove extends AbstractMove {
-    intoShape() {
-        const anchor = this.centerOfRotation( ps, GameEventType.TURN_LEFT );
+    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( - this.radious) );
+    intoShape( ps: PlayerSnapshot, dt: number ) {
+        const anchor = this.centerOfRotation( ps );
         let angleStart = ps.pos.angleBetween(anchor);
         // this way curves are always clock-wise
         // const angleEnd = angleStart - w * dt;
@@ -21,9 +22,9 @@ class TurnLeftMove extends AbstractMove {
         angleStart = angleStart - ps.w() * dt;
         return new Curve( anchor, this.radious, angleStart, angleEnd  );
     }
-    state() {
-        const anchor = this.centerOfRotation( state, eventType );
-        const newPos = pos.rotAround( - w * dt, anchor);
+    state( state: PlayerSnapshot ) {
+        const anchor = this.centerOfRotation( state );
+        const newPos = state.pos.rotAround( - w * dt, anchor);
         const newDir = newPos.sub(anchor).normal().mul( -1 );
         return new PlayerState(newPos, newDir);
     }
