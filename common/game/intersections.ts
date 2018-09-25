@@ -13,10 +13,19 @@ abstract class AbstractMove {
 }
 class TurnLeftMove extends AbstractMove {
     intoShape() {
-        throw new Error("Method not implemented.");
+        const anchor = this.centerOfRotation( ps, GameEventType.TURN_LEFT );
+        let angleStart = ps.pos.angleBetween(anchor);
+        // this way curves are always clock-wise
+        // const angleEnd = angleStart - w * dt;
+        const angleEnd = angleStart;
+        angleStart = angleStart - ps.w() * dt;
+        return new Curve( anchor, this.radious, angleStart, angleEnd  );
     }
     state() {
-        throw new Error("Method not implemented.");
+        const anchor = this.centerOfRotation( state, eventType );
+        const newPos = pos.rotAround( - w * dt, anchor);
+        const newDir = newPos.sub(anchor).normal().mul( -1 );
+        return new PlayerState(newPos, newDir);
     }
 }
 class TurnRightMove extends AbstractMove {
@@ -153,18 +162,18 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
         intoShape( p1.head, timestamp - p1.head.timestamp ),
         intoShape( p2.head, timestamp - p2.head.timestamp )
     )
-        .map( i => { 
-            const t1 = timeToReach(p1.head, i);
-            const t2 = timeToReach(p2.head, i);
-            return new Crash( 
-                t1 < t2 ? p2 : p1, 
-                t1 < t2 ? p1 : p2, 
-                t1 < t2 ? t1 : t2,
-                i
-            );
-        })
-        .sort( (c1, c2) => c1.when - c2.when )
-        .shift(); // take first
+    .map( i => { 
+        const t1 = timeToReach(p1.head, i);
+        const t2 = timeToReach(p2.head, i);
+        return new Crash( 
+            t1 < t2 ? p2 : p1, 
+            t1 < t2 ? p1 : p2, 
+            t1 < t2 ? t1 : t2,
+            i
+        );}
+    )
+    .sort( (c1, c2) => c1.when - c2.when )
+    .shift(); // take first
 }
 
 /**
