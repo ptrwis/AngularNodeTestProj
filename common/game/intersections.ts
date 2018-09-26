@@ -7,8 +7,10 @@ import { Shape } from "./shape";
  * 
  */
 class Cursor {
-    pos: Vec2d;
-    dir: Vec2d;
+    constructor(
+        public pos: Vec2d,
+        public dir: Vec2d
+    ) {}
 }
 
 /**
@@ -21,8 +23,6 @@ class PlayerSnapshot {
     ){
         // ...
     }
-    v= 1.0; // linear velocity (move outside or into AbstractMove)
-    w = () => this.v / (0.5 * this.v); // w = v / r and radious is a function of velocity
 }
 
 /**
@@ -30,102 +30,129 @@ class PlayerSnapshot {
  */
 class Player {
     head: PlayerSnapshot;
-    tail: Shape[];
+    tail: Shape[]; // or PlayerSnapshot[]
     applyEvent( move: AbstractMove ) {
+        const dt = move.timestamp - this.head.lastMove.timestamp;
         // 0. new head
         const newHead = new PlayerSnapshot(
-            this.head.lastMove.state( this.head ),
+            this.head.lastMove.state( dt ),
             move
         );
         // 1. add head to tail
-        const dt = move.timestamp - this.head.lastMove.timestamp;
-        this.tail.push( this.head.lastMove.intoShape( this.head, dt ) );
+        this.tail.push( this.head.lastMove.intoShape( dt ) );
         // 2. set new head
         this.head =newHead;
     }
 }
 
 /**
- * 
+ * r, v, w are here because they can change per move.
+ * When player takes 'speed' item a new move is being created
  */
 abstract class AbstractMove {
-    timestamp: number;
-    abstract state( state: PlayerSnapshot );
-    abstract intoShape( ps: PlayerSnapshot, dt: number )
-    abstract timeToReach( ps: PlayerSnapshot, pos: Vec2d );
+    v = 1.0; // linear velocity (move outside or into AbstractMove)
+    r = 10.0;
+    constructor(
+        public snap: PlayerSnapshot,
+        public timestamp: number
+    ) {}
+    setVelocity = ( v: number ) => this.v = v;
+    setRadious = ( r: number ) => this.r = r;
+    w = () => this.v / this.r; // w = v / r and radious is a function of velocity
+    abstract state( dt: number );
+    abstract intoShape( dt: number )
+    abstract timeToReach( pos: Vec2d );
     abstract intersect( x: Segment | Curve );
 }
 /**
  * 
  */
 class TurnLeftMove extends AbstractMove {
-    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( - this.radious) );
+    centerOfRotation = ( ) => this.snap.cursor.pos.add( this.snap.cursor.dir.normal().mul( - this.r) );
     intersect( x: Segment | Curve ) {
-        // if x instanceof Segment ...
-        // if x instanceof Curve ...
+        if( x instanceof Curve )
+            return intersectionCurveCurve( this.intoShape(dt), x as Curve);
+        if( x instanceof Segment )
+            return intersectionCurveSegment( this.intoShape(dt), x as Segment);
     }
-    timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
-        const center = this.centerOfRotation( ps );
-        const a = ps.pos.angleBetween(center);
+    timeToReach( pos: Vec2d ) {
+        const center = this.centerOfRotation( );
+        const a = this.snap.cursor.pos.angleBetween(center);
         const b = pos.angleBetween(center);
-        return Math.abs(a - b) / ps.w();
+        return Math.abs(a - b) / this.w();
     }
-    intoShape( ps: PlayerSnapshot, dt: number ) {
-        const anchor = this.centerOfRotation( ps );
-        let angleStart = ps.pos.angleBetween(anchor);
+    intoShape( dt: number ) {
+        const anchor = this.centerOfRotation( );
+        let angleStart = this.snap.cursor.pos.angleBetween(anchor);
         // this way curves are always clock-wise
         // const angleEnd = angleStart - w * dt;
         const angleEnd = angleStart;
-        angleStart = angleStart - ps.w() * dt;
-        return new Curve( anchor, this.radious, angleStart, angleEnd  );
+        angleStart = angleStart - this.w() * dt;
+        return new Curve( anchor, this.r, angleStart, angleEnd  );
     }
-    state( state: PlayerSnapshot ) {
-        const anchor = this.centerOfRotation( state );
-        const newPos = state.pos.rotAround( - w * dt, anchor);
+    state( dt: number ) {
+        const anchor = this.centerOfRotation( );
+        const newPos = this.snap.cursor.pos.rotAround( - this.w() * dt, anchor);
         const newDir = newPos.sub(anchor).normal().mul( -1 );
-        return new PlayerState(newPos, newDir);
+        return new Cursor(newPos, newDir);
     }
 }
 /**
  * 
  */
 class TurnRightMove extends AbstractMove {
-    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( + this.radious) );
-    timeToReach( ps: PlayerSnapshot, pos: Vec2d ) {
-        const center = this.centerOfRotation( ps );
-        const a = ps.pos.angleBetween(center);
-        const b = pos.angleBetween(center);
-        return Math.abs(a - b) / ps.w();
+    intersect( x: Segment | Curve ) {
+        if( x instanceof Curve )
+            return intersectionCurveCurve( this.intoShape(dt), x as Curve);
+        if( x instanceof Segment )
+            return intersectionCurveSegment( this.intoShape(dt), x as Segment);
     }
-    intoShape() {
-        const anchor = this.centerOfRotation( state );
-        const angleStart = state.pos.angleBetween(anchor);
-        const angleEnd = angleStart + w * dt;
-        return new Curve( anchor, this.radious, angleStart, angleEnd );
+    centerOfRotation = ( ) => this.snap.cursor.pos.add( this.snap.cursor.dir.normal().mul( + this.r) );
+    timeToReach( pos: Vec2d ) {
+        const center = this.centerOfRotation( );
+        const a = this.snap.cursor.pos.angleBetween(center);
+        const b = pos.angleBetween(center);
+        return Math.abs(a - b) / this.w();
+    }
+    intoShape( dt: number ) {
+        const anchor = this.centerOfRotation( );
+        const angleStart = this.snap.cursor.pos.angleBetween(anchor);
+        const angleEnd = angleStart + this.w() * dt;
+        return new Curve( anchor, this.r, angleStart, angleEnd );
         /*const anchor = this.centerOfRotation( state, GameEventType.TURN_RIGHT );
         const newState = this.countState(state, dt, eventType);
         return this.curveFromEndpoints( state.pos, newState.pos, anchor );*/
     }
     state() {
-        const anchor = this.centerOfRotation( state, eventType );
-        const newPos = pos.rotAround( + w * dt, anchor);
+        const anchor = this.centerOfRotation( );
+        const newPos = this.snap.cursor.pos.rotAround( + this.w() * dt, anchor);
         const newDir = newPos.sub(anchor).normal().mul( +1 );
-        return new PlayerState(newPos, newDir);
+        return new Cursor(newPos, newDir);
     }
 }
 /**
  * 
  */
 class Str8AheadMove extends AbstractMove {
-    timeToReach = ( ps: PlayerSnapshot, pos: Vec2d ) => ps.v / ps.pos.dist( pos );
+    intersect(x: Segment | Curve) {
+        if( x instanceof Segment )
+            return intersectionSegmentSegment( this.intoShape(), x as Segment);
+        if( x instanceof Curve )
+            return intersectionCurveSegment( x as Curve, this.intoShape());
+    }
+    timeToReach = ( pos: Vec2d ) => this.v / this.snap.cursor.pos.dist( pos );
     intoShape() {
-        return new Segment( state.pos, state.pos.add(state.dir.mul(this.velocity * dt)));
+        return new Segment( 
+            this.snap.cursor.pos, 
+            this.snap.cursor.pos.add(this.snap.cursor.dir.mul(this.v * dt))
+        );
     }
     state() {
-        const newPos = pos.add(dir.mul(v * dt));
-        return new PlayerState(newPos, dir);
+        const newPos = this.snap.cursor.pos.add(this.snap.cursor.dir.mul(this.v * dt));
+        return new Cursor(newPos, this.snap.cursor.dir);
     }
 }
+
 function drawCurve( c: Curve ) {}
 function drawSegment( s: Segment ) {}
 
@@ -151,14 +178,13 @@ export class Crash {
  */
 // export function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
 export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
-
     return intersections(
-        intoShape( p1.head, timestamp - p1.head.timestamp ),
-        intoShape( p2.head, timestamp - p2.head.timestamp )
+        p2.head.lastMove.intoShape( timestamp - p1.head.lastMove.timestamp ),
+        p1.head.lastMove.intoShape( timestamp - p2.head.lastMove.timestamp )
     )
     .map( i => { 
-        const t1 = timeToReach(p1.head, i);
-        const t2 = timeToReach(p2.head, i);
+        const t1 = p1.head.lastMove.timeToReach(i);
+        const t2 = p2.head.lastMove.timeToReach(i);
         return new Crash( 
             t1 < t2 ? p2 : p1, 
             t1 < t2 ? p1 : p2, 
