@@ -2,13 +2,53 @@ import {Vec2d} from "./vec2d";
 import { Segment } from "./segment";
 import { Curve } from "./curve";
 import { Shape } from "./shape";
-import { GameEventType } from "./game";
+
+/**
+ * 
+ */
+class Cursor {
+    pos: Vec2d;
+    dir: Vec2d;
+}
+
+/**
+ * 
+ */
+class PlayerSnapshot {
+    constructor(
+        public cursor: Cursor,
+        public lastMove: AbstractMove // inc. timestamp
+    ){
+        // ...
+    }
+    v= 1.0; // linear velocity (move outside or into AbstractMove)
+    w = () => this.v / (0.5 * this.v); // w = v / r and radious is a function of velocity
+}
+
+/**
+ * 
+ */
+class Player {
+    head: PlayerSnapshot;
+    tail: Shape[];
+    applyEvent( move: AbstractMove ) {
+        // 0. new head
+        const newHead = new PlayerSnapshot(
+            this.head.lastMove.state( this.head ),
+            move
+        );
+        // 1. add head to tail
+        const dt = move.timestamp - this.head.lastMove.timestamp;
+        this.tail.push( this.head.lastMove.intoShape( this.head, dt ) );
+        // 2. set new head
+        this.head =newHead;
+    }
+}
+
 /**
  * 
  */
 abstract class AbstractMove {
-    // pos: Vec2d;
-    // dir: Vec2d;
     timestamp: number;
     abstract state( state: PlayerSnapshot );
     abstract intoShape( ps: PlayerSnapshot, dt: number )
@@ -19,6 +59,7 @@ abstract class AbstractMove {
  * 
  */
 class TurnLeftMove extends AbstractMove {
+    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( - this.radious) );
     intersect( x: Segment | Curve ) {
         // if x instanceof Segment ...
         // if x instanceof Curve ...
@@ -29,7 +70,6 @@ class TurnLeftMove extends AbstractMove {
         const b = pos.angleBetween(center);
         return Math.abs(a - b) / ps.w();
     }
-    centerOfRotation = ( state: PlayerSnapshot ) => state.pos.add( state.dir.normal().mul( - this.radious) );
     intoShape( ps: PlayerSnapshot, dt: number ) {
         const anchor = this.centerOfRotation( ps );
         let angleStart = ps.pos.angleBetween(anchor);
@@ -88,30 +128,6 @@ class Str8AheadMove extends AbstractMove {
 }
 function drawCurve( c: Curve ) {}
 function drawSegment( s: Segment ) {}
-
-/**
- * 
- */
-class PlayerSnapshot {
-    // structure:
-    pos: Vec2d;
-    dir: Vec2d;
-    timestamp: number;
-    event: GameEventType;
-    v: number; // libnear velocity
-    // interface:
-    state( dt: number ) { }
-    w = () => this.v / (0.5 * this.v); // w = v / r and radious is a function of velocity
-}
-
-/**
- * 
- */
-class Player {
-    head: PlayerSnapshot;
-    tail: Shape[];
-    applyEvent( e: GameEventType ) { }
-}
 
 /**
  * 
