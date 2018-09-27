@@ -1,11 +1,12 @@
 import { Segment } from '../../../../../common/game/segment';
 import { Curve } from '../../../../../common/game/curve';
 import { Vec2d } from '../../../../../common/game/vec2d';
+import { Renderer } from './renderer.interface';
 
 /**
  * Draw game using HTML Canvas
  */
-export class CanvasRenderer {
+export class CanvasRenderer implements Renderer {
 
   constructor(
     private canvas: HTMLCanvasElement,
