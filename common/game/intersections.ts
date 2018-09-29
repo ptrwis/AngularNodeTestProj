@@ -50,6 +50,11 @@ class Player {
     tail: Shape[]; // or PlayerSnapshot[]
     pullUp() {}
     pushDown() {}
+    crashTest( timestamp: number, other: Player ) {
+        const crash = crashTest( this, other, timestamp);
+        if ( crash === undefined ) return undefined;
+        return crash.when < timestamp ? crash : null;
+    };
     applyEvent( timestamp: number, move: AbstractMove ) {
         const dt = timestamp - this.head.timestamp;
         // 0. new head
@@ -79,10 +84,9 @@ abstract class AbstractMove {
     setRadious = ( r: number ) => this.r = r;
     w = () => this.v / this.r;
     abstract state( timestamp: number );
-    abstract intoShape( timestamp: number )
+    abstract intoShape( timestamp: number );
+    // This sucks, as we must assume that 'pos' lies on the path of this move. Should be accessible only by 'crashTest' function.
     abstract timeToReach( pos: Vec2d );
-    // abstract intersect( timestamp: number, x: Segment | Curve );
-    abstract crashTest( timestamp: number, other: AbstractMove ): Crash;
     abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me. TODO: set Renderer globally or make singleton
 }
 /**
@@ -100,12 +104,6 @@ class TurnLeftMove extends AbstractMove {
     draw( timestamp: number, r: Renderer ) {
         const dt = timestamp - this.snap.timestamp;
         r.drawCurve( this.intoShape(dt) );
-    }
-    crashTest( timestamp: number, other: AbstractMove ) {
-        const dt = timestamp - this.snap.timestamp;
-        if( other instanceof TurnLeftMove ) return intersectionCurveCurve( this.intoShape(dt),  (other as TurnLeftMove).intoShape(timestamp) );
-        if( other instanceof TurnRightMove ) return intersectionCurveCurve( this.intoShape(dt),  (other as TurnRightMove).intoShape(timestamp) );
-        if( other instanceof Segment ) return intersectionCurveSegment( this.intoShape(dt),  (other as Str8AheadMove).intoShape(timestamp) );
     }
     timeToReach( pos: Vec2d ) {
         const center = this.centerOfRotation( );
@@ -140,13 +138,6 @@ class TurnRightMove extends AbstractMove {
         const dt = timestamp - this.snap.timestamp;
         r.drawCurve( this.intoShape(dt) );
     }
-    crashTest( timestamp: number, other: AbstractMove ) {
-        const dt = timestamp - this.snap.timestamp;
-        if( other instanceof Curve )
-            return intersectionCurveCurve( this.intoShape(dt), other as Curve);
-        if( other instanceof Segment )
-            return intersectionCurveSegment( this.intoShape(dt), other as Segment);
-    }
     timeToReach( pos: Vec2d ) {
         const center = this.centerOfRotation( );
         const a = this.snap.head.pos.angleBetween(center);
@@ -174,13 +165,6 @@ class Str8AheadMove extends AbstractMove {
         const dt = timestamp - this.snap.timestamp;
         r.drawSegment( this.intoShape(dt) );
     }
-    crashTest( timestamp: number, other: AbstractMove ) {
-        const dt = timestamp - this.snap.timestamp;
-        if( x instanceof Segment )
-            return intersectionSegmentSegment( this.intoShape(dt), x as Segment);
-        if( x instanceof Curve )
-            return intersectionCurveSegment( x as Curve, this.intoShape(dt));
-    }
     timeToReach = ( pos: Vec2d ) => this.v / this.snap.head.pos.dist( pos );
     intoShape( timestamp: number ) {
         const dt = timestamp - this.snap.timestamp;
@@ -191,9 +175,6 @@ class Str8AheadMove extends AbstractMove {
     }
 }
 
-function drawCurve( c: Curve ) {}
-function drawSegment( s: Segment ) {}
-
 /**
  * 
  */
@@ -203,12 +184,14 @@ export class Crash {
         public whoKilled: Player,
         public when: number,
         public place: Vec2d
-        // dir: Vec2d; direction of victim at the moment of crash (?-already in whoDied.dir)
     ) {
     }
 }
 
 /**
+ * Counts first (in time) intersection of two moves.
+ * Returns Crash or undefined.
+ * TODO: we can here check collisions with tail
  * 
  * @param ps1 
  * @param ps2 
@@ -216,6 +199,25 @@ export class Crash {
  */
 // export function crashTest( ps1: PlayerSnapshot, ps2: PlayerSnapshot, timestamp: number ): Crash {
 export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
+    // if ps1 is Circle and dt >= Math.PI / p1.head.move.w(), then we have a 'self-crash'
+
+    // TODO: test head of p1 with tail of p2
+    
+    p2.tail.map( p2shape =>
+        intersections(
+            p1.head.move.intoShape( timestamp ),
+            p2shape
+        )
+    )
+    .filter( k => k.length !== 0 )
+    .reduce( (x,y) => x.concat(y), [] ) //flatMap
+    .map( i => {
+        const t = p1.head.move.timeToReach(i);
+        return new Crash( p1, p2, t, i);
+    } )
+    .sort( (a, b) => a.when - b.when )
+    .shift();
+
     return intersections(
         p2.head.move.intoShape( timestamp ),
         p1.head.move.intoShape( timestamp )
@@ -223,7 +225,7 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     .map( i => { 
         const t1 = p1.head.move.timeToReach(i);
         const t2 = p2.head.move.timeToReach(i);
-        return new Crash( 
+        return new Crash( // this is what we map 'i' into
             t1 < t2 ? p2 : p1, 
             t1 < t2 ? p1 : p2, 
             t1 < t2 ? t1 : t2,
@@ -233,7 +235,6 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     .sort( (c1, c2) => c1.when - c2.when )
     .shift(); // take first
 }
-
 /**
  * 
  * @param s1 
@@ -248,11 +249,11 @@ function intersections( s1: Shape, s2: Shape ): Vec2d[] {
         return intersectionCurveSegment(s2 as Curve, s1 as Segment);
     if ( s1 instanceof Curve && s2 instanceof Segment )
         return intersectionCurveSegment(s1 as Curve, s2 as Segment);
-    throw new Error( 'unhandled type' );
+    throw new Error( 'unhandled type / combination' );
 }
 
 /**
- * 
+ * TODO: maybe split to Circle-Line and specialize to Curve / Segment later
  * @param c 
  * @param s 
  */
@@ -319,21 +320,21 @@ export function intersectionCurveCurve( c_1: Curve, c_2: Curve ): Vec2d[] {
     }
     // move both circles so that one of them will lie on (0,0)
     const origin = c1.center;
-    c1.center = c1.center.sub(origin);
+    c1.center = c1.center.sub(origin); // c1.move( -origin )
     c2.center = c2.center.sub(origin);
     // rotate second one to lie on OX. First doesn't change 'cus already lies on (0,0)
     const angle = c2.center.angle();
     c2.center = c2.center.rot( - angle );
     // http://mathworld.wolfram.com/Circle-CircleIntersection.html
     const x = (d**2 - R**2 + r**2) / (2*d);
-    const y1 = +((r**2 - x**2)**0.5);
-    const y2 = -((r**2 - x**2)**0.5);
+    const y1 = + ((r**2 - x**2)**0.5);
+    const y2 = - ((r**2 - x**2)**0.5);
     let p1 = new Vec2d(x, y1);
     let p2 = new Vec2d(x, y2);
     // rotate and translate results back
     p1 = p1.rot(+angle).add(origin);
     p2 = p2.rot(+angle).add(origin);
-    // check domain
+    // Check domain. Rather than translating c1 and c2 back, use original c_1 and c_2
     let result = [];
     if ( c_1.isInDomain(p1) && c_2.isInDomain(p1) ) {
         result.push(p1);
