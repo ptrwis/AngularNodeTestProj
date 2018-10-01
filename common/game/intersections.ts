@@ -48,6 +48,7 @@ class PlayerSnapshot {
 class Player {
     head: PlayerSnapshot;
     tail: Shape[]; // or PlayerSnapshot[]
+    snake: PlayerSnapshot[];
     pullUp() {}
     pushDown() {}
     crashTest( timestamp: number, other: Player ) {
@@ -66,13 +67,14 @@ class Player {
         // 1. add head to tail
         this.tail.push( this.head.move.intoShape( dt ) );
         // 2. set new head
-        this.head =newHead;
+        this.head = newHead;
     }
 }
 
 /**
  * r, v, w are here because they can change per move.
  * When player takes 'speed' item a new move is being created
+ * ?-> AbstractState, TurningLeft, TurningRight, MovingForward (?)
  */
 abstract class AbstractMove {
     v = 1.0; // linear velocity (move outside or into AbstractMove)
@@ -201,8 +203,7 @@ export class Crash {
 export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     // if ps1 is Circle and dt >= Math.PI / p1.head.move.w(), then we have a 'self-crash'
 
-    // TODO: test head of p1 with tail of p2
-    
+    // test p1.head vs p2.tail
     p2.tail.map( p2shape =>
         intersections(
             p1.head.move.intoShape( timestamp ),
@@ -218,6 +219,7 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     .sort( (a, b) => a.when - b.when )
     .shift();
 
+
     return intersections(
         p2.head.move.intoShape( timestamp ),
         p1.head.move.intoShape( timestamp )
@@ -232,7 +234,7 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
             i
         );}
     )
-    .sort( (c1, c2) => c1.when - c2.when )
+    .sort( (a, b) => a.when - b.when )
     .shift(); // take first
 }
 /**
