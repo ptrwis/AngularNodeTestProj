@@ -29,26 +29,12 @@ class Cursor {
     ) {}
 }
 
-/**
- * 
- */
-class PlayerSnapshot {
-    constructor(
-        public head: Cursor,
-        public move: AbstractMove,
-        public timestamp: number
-    ){
-        // ...
-    }
-}
 
 /**
  * 
  */
 class Player {
-    head: PlayerSnapshot;
-    tail: Shape[]; // or PlayerSnapshot[]
-    snake: PlayerSnapshot[];
+    snake: AbstractMove[];
     pullUp() {}
     pushDown() {}
     crashTest( timestamp: number, other: Player ) {
@@ -56,19 +42,12 @@ class Player {
         if ( crash === undefined ) return undefined;
         return crash.when < timestamp ? crash : null;
     };
-    applyEvent( timestamp: number, move: AbstractMove ) {
-        const dt = timestamp - this.head.timestamp;
-        // 0. new head
-        const newHead = new PlayerSnapshot(
-            this.head.move.state( dt ),
-            move,
-            timestamp
-        );
-        // 1. add head to tail
-        this.tail.push( this.head.move.intoShape( dt ) );
-        // 2. set new head
-        this.head = newHead;
+    applyEvent( move: AbstractMove ) {
+        this.last().dt = move.timestamp - this.last().timestamp;
+        move.snap = this.last().state( move.timestamp );
+        this.snake.push( move );
     }
+    last = () => this.snake[ this.snake.length - 1 ];
 }
 
 /**
@@ -77,10 +56,12 @@ class Player {
  * ?-> AbstractState, TurningLeft, TurningRight, MovingForward (?)
  */
 abstract class AbstractMove {
-    v = 1.0; // linear velocity (move outside or into AbstractMove)
+    snap: Cursor;
+    dt: number = null; // dt is being set when new move arrives
+    v = 1.0;
     r = 10.0;
     constructor(
-        public snap: PlayerSnapshot
+        public timestamp: number
     ) {}
     setVelocity = ( v: number ) => this.v = v;
     setRadious = ( r: number ) => this.r = r;
@@ -89,35 +70,35 @@ abstract class AbstractMove {
     abstract intoShape( timestamp: number );
     // This sucks, as we must assume that 'pos' lies on the path of this move. Should be accessible only by 'crashTest' function.
     abstract timeToReach( pos: Vec2d );
-    abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me. TODO: set Renderer globally or make singleton
+    abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me.
 }
 /**
  * 
  */
 class TurnLeftMove extends AbstractMove {
-    centerOfRotation = ( ) => this.snap.head.pos.add( this.snap.head.dir.normal().mul( - this.r) );
+    centerOfRotation = ( ) => this.snap.pos.add( this.snap.dir.normal().mul( - this.r) );
     state( timestamp: number ) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = timestamp - this.timestamp;
         const anchor = this.centerOfRotation( );
-        const newPos = this.snap.head.pos.rotAround( - this.w() * dt, anchor);
+        const newPos = this.snap.pos.rotAround( - this.w() * dt, anchor);
         const newDir = newPos.sub(anchor).normal().mul( -1 );
         return new Cursor(newPos, newDir);
     }
     draw( timestamp: number, r: Renderer ) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = timestamp - this.timestamp;
         r.drawCurve( this.intoShape(dt) );
     }
     timeToReach( pos: Vec2d ) {
         const center = this.centerOfRotation( );
-        const a = this.snap.head.pos.angleBetween(center);
+        const a = this.snap.pos.angleBetween(center);
         const b = pos.angleBetween(center);
         return Math.abs(a - b) / this.w();
     }
     intoShape( timestamp: number ) {
         // if BRUSH_STATE == UP return null;
-        const dt = timestamp - this.snap.timestamp;
+        const dt = this.dt !== null ? this.dt : timestamp - this.timestamp ;
         const anchor = this.centerOfRotation( );
-        let angleStart = this.snap.head.pos.angleBetween(anchor);
+        let angleStart = this.snap.pos.angleBetween(anchor);
         let angleEnd = angleStart - this.w() * dt;
         // counter clock-wise to clock-wise
         [angleStart, angleEnd] = [angleEnd, angleStart];
@@ -128,28 +109,28 @@ class TurnLeftMove extends AbstractMove {
  * 
  */
 class TurnRightMove extends AbstractMove {
-    centerOfRotation = ( ) => this.snap.head.pos.add( this.snap.head.dir.normal().mul( + this.r) );
+    centerOfRotation = ( ) => this.snap.pos.add( this.snap.dir.normal().mul( + this.r) );
     state( timestamp: number ) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = timestamp - this.timestamp;
         const anchor = this.centerOfRotation( );
-        const newPos = this.snap.head.pos.rotAround( + this.w() * dt, anchor);
+        const newPos = this.snap.pos.rotAround( + this.w() * dt, anchor);
         const newDir = newPos.sub(anchor).normal().mul( +1 );
         return new Cursor(newPos, newDir);
     }
     draw( timestamp: number, r: Renderer) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = timestamp - this.timestamp;
         r.drawCurve( this.intoShape(dt) );
     }
     timeToReach( pos: Vec2d ) {
         const center = this.centerOfRotation( );
-        const a = this.snap.head.pos.angleBetween(center);
+        const a = this.snap.pos.angleBetween(center);
         const b = pos.angleBetween(center);
         return Math.abs(a - b) / this.w();
     }
     intoShape( timestamp: number ) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = this.dt !== null ? this.dt : timestamp - this.timestamp ;
         const anchor = this.centerOfRotation( );
-        const angleStart = this.snap.head.pos.angleBetween(anchor);
+        const angleStart = this.snap.pos.angleBetween(anchor);
         const angleEnd = angleStart + this.w() * dt;
         return new Curve( anchor, this.r, angleStart, angleEnd );
     }
@@ -159,20 +140,20 @@ class TurnRightMove extends AbstractMove {
  */
 class Str8AheadMove extends AbstractMove {
     state( timestamp: number ) {
-        const dt = timestamp - this.snap.timestamp;
-        const newPos = this.snap.head.pos.add(this.snap.head.dir.mul(this.v * dt));
-        return new Cursor(newPos, this.snap.head.dir);
+        const dt = timestamp - this.timestamp;
+        const newPos = this.snap.pos.add(this.snap.dir.mul(this.v * dt));
+        return new Cursor(newPos, this.snap.dir);
     }
     draw( timestamp: number, r: Renderer) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = timestamp - this.timestamp;
         r.drawSegment( this.intoShape(dt) );
     }
-    timeToReach = ( pos: Vec2d ) => this.v / this.snap.head.pos.dist( pos );
+    timeToReach = ( pos: Vec2d ) => this.v / this.snap.pos.dist( pos );
     intoShape( timestamp: number ) {
-        const dt = timestamp - this.snap.timestamp;
+        const dt = this.dt !== null ? this.dt : timestamp - this.timestamp ;
         return new Segment( 
-            this.snap.head.pos, 
-            this.snap.head.pos.add(this.snap.head.dir.mul(this.v * dt))
+            this.snap.pos, 
+            this.snap.pos.add(this.snap.dir.mul(this.v * dt))
         );
     }
 }
@@ -203,30 +184,48 @@ export class Crash {
 export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     // if ps1 is Circle and dt >= Math.PI / p1.head.move.w(), then we have a 'self-crash'
 
-    // test p1.head vs p2.tail
-    p2.tail.map( p2shape =>
-        intersections(
-            p1.head.move.intoShape( timestamp ),
-            p2shape
-        )
+    // head of p1 with whole p2:
+    p2.snake.map( p2move =>
+        {
+            const is = intersections(
+                p1.last().intoShape( timestamp ),
+                p2move.intoShape( timestamp )
+            );
+            return is.length > 0 ? {a: is, move: p2move} : null;
+        }
     )
-    .filter( k => k.length !== 0 )
-    .reduce( (x,y) => x.concat(y), [] ) //flatMap
+    // head of p2 with whole p1:
+    /* .concat(
+        p1.snake.map( p1move =>
+            intersections(
+                p2.last().intoShape( timestamp ),
+                p1move.intoShape( timestamp )
+            )
+        )
+    ) */
+    .filter( k => k !== null )
+    // .reduce( (x,y) => x.concat(y), [] ) //flatMap
     .map( i => {
-        const t = p1.head.move.timeToReach(i);
-        return new Crash( p1, p2, t, i);
+        const t1 = p1.last().timeToReach(i.a[0]);
+        const t2 = i.move.timeToReach(i.a[0]);
+        return new Crash( // this is what we map 'i' into
+            t1 < t2 ? p2 : p1, 
+            t1 < t2 ? p1 : p2, 
+            t1 < t2 ? t1 : t2,
+            i.a[0]
+        );
     } )
     .sort( (a, b) => a.when - b.when )
     .shift();
 
-
+    /*
     return intersections(
-        p2.head.move.intoShape( timestamp ),
-        p1.head.move.intoShape( timestamp )
+        p2.last().intoShape( timestamp ),
+        p1.last().intoShape( timestamp )
     )
     .map( i => { 
-        const t1 = p1.head.move.timeToReach(i);
-        const t2 = p2.head.move.timeToReach(i);
+        const t1 = p1.last().timeToReach(i);
+        const t2 = p2.last().timeToReach(i);
         return new Crash( // this is what we map 'i' into
             t1 < t2 ? p2 : p1, 
             t1 < t2 ? p1 : p2, 
@@ -236,7 +235,9 @@ export function crashTest( p1: Player, p2: Player, timestamp: number ): Crash {
     )
     .sort( (a, b) => a.when - b.when )
     .shift(); // take first
+    */
 }
+
 /**
  * 
  * @param s1 
