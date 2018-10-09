@@ -171,6 +171,11 @@ export class Crash {
     }
 }
 
+export const thr0w = ( start: Cursor, dt: number ) => new Vec2d(
+    start.pos.x + 1.0 * Math.cos( start.dir.x ) * dt,
+    start.pos.y + 1.0 * Math.sin( start.dir.x ) * dt - 0.5 * 9.81 * dt**2
+);
+
 /**
  * Counts first (in time) intersection of two moves.
  * Returns Crash or undefined.
