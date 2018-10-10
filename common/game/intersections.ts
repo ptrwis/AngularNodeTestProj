@@ -20,6 +20,17 @@ function handleEvent( event ) {
 */
 
 /**
+ * Game has objects.
+ * Objects have state functions. ?State fun is per object's event?
+ * State functions of some objects can lead to inreraction and emit an event.
+ * If state function is a move of some object(s), they eg. can collide. We need to check collision of two objects. 
+ *      If we throw two circles, we'll need a function which will return a Crash object,
+ *      containng information about position of collision (if any) and time.
+ * State function can be more general like Clapeyron's equation pV = RT.
+ * State function is always a function of time (at least).
+ */
+
+/**
  * 
  */
 class Cursor {
@@ -50,7 +61,14 @@ class Player {
     last = () => this.snake[ this.snake.length - 1 ];
 }
 
+class Snapshot {
+    timestamp: number;
+    event: AbstractMove;
+    state: Cursor;
+}
+
 /**
+ * Now AbstractMove is like snapshot.
  * r, v, w are here because they can change per move.
  * When player takes 'speed' item a new move is being created
  * ?-> AbstractState, TurningLeft, TurningRight, MovingForward (?)
