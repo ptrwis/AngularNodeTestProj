@@ -4,32 +4,6 @@ import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { Renderer } from "../../frontend/src/app/components/renderer/renderer.interface";
 
-/*
-main(){
-    handeEvent( countClosestEvent() );
-}
-game loop:
-function handleEvent( event ) {
-    setTimeout( () => {
-        // handle
-        event = countClosestEvent();
-        handeEvent( event );
-    },
-    event.timestamp - now )
-}
-*/
-
-/**
- * Game has objects.
- * Objects have state functions. ?State fun is per object's event?
- * State functions of some objects can lead to inreraction and emit an event.
- * If state function is a move of some object(s), they eg. can collide. We need to check collision of two objects. 
- *      If we throw two circles, we'll need a function which will return a Crash object,
- *      containng information about position of collision (if any) and time.
- * State function can be more general like Clapeyron's equation pV = RT.
- * State function is always a function of time (at least).
- */
-
 /**
  * 
  */
