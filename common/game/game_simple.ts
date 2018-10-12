@@ -44,11 +44,6 @@ class MoveRight extends AbstractMove {
     }
 }
 
-/**
- * Human    -> Controller  -> Player.TurnLeft(now)
- * AI       -> VController -> Player.TurnLeft(now)
- * Network -> (V)Controller -> Server -> Client -> VController -> Player.TurnLeft(event.timestamp)
- */
 class TheGame {
     seed: number;
     players: Player[];
@@ -70,15 +65,30 @@ class TheGame {
     }
 }
 
+class Networking {
+    onEvent( lambda: (event: AbstractMove) => void ) {
+        // receive event from network
+        lambda( new MoveLeft() );
+    }
+}
+
 class GameSystem {
-    networking.onEvent( (event) => {
-        switch( event ) {
-            case TURN_LEFT: this.submitRemoteEvent(event); break;
-        }
-    } );
-    submitLocalEvent( event ) {
+    /**
+     *  Keyboard --> [Controller -> Player]
+     *  Network  --> [Controller -> Player]
+     *  AI       --> [Controller -> Player]
+     */
+    networking: Networking;
+    constructor() {
+        this.networking.onEvent( (event) => {
+            switch( event ) {
+                case TURN_LEFT: this.submitRemoteEvent(event); break;
+            }
+        } );
+    }
+    submitLocalEvent( event: AbstractMove ) {
         game.playerById(event.playerId).turnLeft(event.timestamp);
-        networking.broadcast( event );
+        this.networking.broadcast( event );
     }
     submitRemoteEvent( event ) {
         game.playerById(event.playerId).turnLeft(event.timestamp);
@@ -86,9 +96,10 @@ class GameSystem {
 }
 
 function keyboard( key ) {
+    player = keyMap.playerByKey(key);
     switch( key ) {
         case 'LEFT':
-            gameSystem.onEvent(localPlayer.turnLeft());
+            gameSystem.onEvent(player.turnLeft());
             break;
     }
 }
