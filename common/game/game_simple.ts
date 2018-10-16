@@ -16,9 +16,16 @@ class Cursor {
  * 
  */
 abstract class AbstractMove {
-    snap: Cursor; // where was the user when he made this move
-    // dt: number = null; // dt will be set when next move will arrive
-    abstract state( timestamp: number ): Cursor;
+    prev?: AbstractMove;
+    timestamp: number;
+    abstract current_offset();
+    state(  ): Cursor {
+        return 
+        this.prev == null ?
+        state0 + current_offset
+        :
+        this.state( this.prev.state() ) + current_offset;
+    }
     // abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me.
 }
 
@@ -26,30 +33,47 @@ abstract class AbstractMove {
  * 
  */
 class Player{
-    events: AbstractMove[] = [];
-    last = () => this.events[ this.events.length - 1 ];
+    constructor(
+        state0: Cursor,
+        event: AbstractMove // last event
+    ){}
     applyEvent( move: AbstractMove ) {
+        move.prev = this.event;
     }
-    state = () => this.events.reduce( (prev, curr) => curr );
+    state() {
+        // let state = this.state0;
+        // this.events.forEach( event => state = event.state( state ) ); // reduce?
+        return this.event.state();
+    };
 }
 
+class MoveForward extends AbstractMove {
+    current_offset( state: Cursor ): Cursor {
+        return new Cursor(
+            state.pos.add( state.dir.mul(this.timestamp - this.prev.timestamp) ) , 
+            state.dir
+        );
+    }
+}
 class MoveLeft extends AbstractMove {
-    state(timestamp: number): Cursor {
+    current_offset( state: Cursor ): Cursor {
         throw new Error("Method not implemented.");
     }
 }
 class MoveRight extends AbstractMove {
-    state(timestamp: number): Cursor {
+    current_offset( state: Cursor ): Cursor {
         throw new Error("Method not implemented.");
     }
 }
 
 class TheGame {
+    startTs: number;
     seed: number;
     players: Player[];
 
     start() {
         this.handleEvent( this.countClosestEvent() );
+        this.startTs = Date.now();
     }
     countClosestEvent( ) {
 
