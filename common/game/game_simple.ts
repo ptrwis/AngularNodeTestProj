@@ -15,36 +15,45 @@ class Cursor {
 /**
  * 
  */
-abstract class AbstractMove {
-    prev?: AbstractMove;
-    timestamp: number;
-    abstract current_offset();
-    state(  ): Cursor {
-        return 
-        this.prev == null ?
-        state0 + current_offset
-        :
-        this.state( this.prev.state() ) + current_offset;
+class Player{
+    constructor(
+        public state0: Cursor,
+        public event: AbstractMove // AbstractMove is like linked list, 'event' is the head
+    ){}
+    applyEvent( move: AbstractMove ) {
+        move.prev = this.event;
     }
-    // abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me.
+    state(  ) {
+        return this.event.state();
+        // let state = this.state0;
+        // this.events.forEach( event => state = event.state( state ) ); // reduce?
+    };
+}
+
+class Throw {
+    pos: Vec2d;
+    dir: Vec2d;
+    timestamp: number;
+    // Returns timestamp of the moment when distance between 'this' and 'other' is minimal, earliest in time.
+    dist( other: Throw, at: number ): number | undefined {
+        // 'at' is timestamp at which we count the distance.
+        if ( at < this.timestamp || at < other.timestamp )
+            return undefined;
+        return 0;
+    }
 }
 
 /**
  * 
  */
-class Player{
-    constructor(
-        state0: Cursor,
-        event: AbstractMove // last event
-    ){}
-    applyEvent( move: AbstractMove ) {
-        move.prev = this.event;
+abstract class AbstractMove {
+    prev?: AbstractMove;
+    timestamp: number;
+    abstract current_offset();
+    state( prevState: Cursor ): Cursor {
+        return prevState + current_offset();
     }
-    state() {
-        // let state = this.state0;
-        // this.events.forEach( event => state = event.state( state ) ); // reduce?
-        return this.event.state();
-    };
+    // abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me.
 }
 
 class MoveForward extends AbstractMove {
