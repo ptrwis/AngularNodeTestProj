@@ -75,7 +75,16 @@ class MoveRight extends AbstractMove {
     }
 }
 
-class TheGame {
+class GameServer {
+    broadcast() { }
+    onMsg( msg ) {
+        if ( now - msg.timestamp < maxLag ) {
+            this.broadcast( msg );
+        }
+    }
+}
+
+class GameClient {
     startTs: number;
     seed: number;
     players: Player[]; // inc local player
@@ -88,45 +97,32 @@ class TheGame {
 
     } 
     // game loop:
-    handleEvent( event ) {
+    submitEvent( event ) {
+        // game.playerById(event.playerId).applyEvent( event );
+        // resync
         setTimeout( () => {
             // handle
             event = this.countClosestEvent();
             this.handleEvent( event ); // this is not recursion
-        },
-        now - event.timestamp )
-    }
-}
-
-// services -> websocket.service
-class Networking {
-    onEvent( lambda: (event: AbstractMove) => void ) {
-        lambda.apply( event );
+            },
+            now - event.timestamp
+        );
     }
 }
 
 class GameSystem {
-    /**
-     *  Keyboard   --> [ submitLocalEvent -> TheGame.players[id].applyEvent(e) ]
-     *  Network    --> [ submitRemoteEvent -> TheGame.players[id].applyEvent(e) ]
-     *  AI (local) --> [ submitLocalEvent -> TheGame.players[id].applyEvent(e) ]
-     */
     networking: Networking;
-    localPlayer: Player;
+    keyboard: Keyboard;
+    localPlayerRef: Player;
     constructor() {
         this.networking.onEvent( (event) => this.submitRemoteEvent(event) );
+        this.keyboard.onEvent( (event) => this.submitLocalEvent(eventByKey[key]) );
     }
     submitLocalEvent( event: AbstractMove ) {
-        game.playerById(event.playerId).applyEvent(event.timestamp);
-        this.networking.broadcast( event );
+        game.submitEvent( event );
+        this.networking.sendToServer( event );
     }
     submitRemoteEvent( event ) {
-        game.playerById(event.playerId).applyEvent( event ); // resync
+        game.submitEvent( event );
     }
-}
-
-function keyboard( key ) {
-    // player = playerByKey[key]; // if many players on a single keyboard
-    event = eventByKey[key]; 
-    this.localPlayer.applyEvent( event );
 }
