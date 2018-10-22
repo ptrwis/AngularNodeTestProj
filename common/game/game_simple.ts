@@ -78,7 +78,7 @@ class MoveRight extends AbstractMove {
 class TheGame {
     startTs: number;
     seed: number;
-    players: Player[];
+    players: Player[]; // inc local player
 
     start() {
         this.handleEvent( this.countClosestEvent() );
@@ -98,41 +98,35 @@ class TheGame {
     }
 }
 
+// services -> websocket.service
 class Networking {
     onEvent( lambda: (event: AbstractMove) => void ) {
-        // receive event from network
-        lambda( new MoveLeft() );
+        lambda.apply( event );
     }
 }
 
 class GameSystem {
     /**
-     *  Keyboard --> [Controller -> Player]
-     *  Network  --> [Controller -> Player]
-     *  AI       --> [Controller -> Player]
+     *  Keyboard   --> [ submitLocalEvent -> TheGame.players[id].applyEvent(e) ]
+     *  Network    --> [ submitRemoteEvent -> TheGame.players[id].applyEvent(e) ]
+     *  AI (local) --> [ submitLocalEvent -> TheGame.players[id].applyEvent(e) ]
      */
     networking: Networking;
+    localPlayer: Player;
     constructor() {
-        this.networking.onEvent( (event) => {
-            switch( event ) {
-                case TURN_LEFT: this.submitRemoteEvent(event); break;
-            }
-        } );
+        this.networking.onEvent( (event) => this.submitRemoteEvent(event) );
     }
     submitLocalEvent( event: AbstractMove ) {
-        game.playerById(event.playerId).turnLeft(event.timestamp);
+        game.playerById(event.playerId).applyEvent(event.timestamp);
         this.networking.broadcast( event );
     }
     submitRemoteEvent( event ) {
-        game.playerById(event.playerId).turnLeft(event.timestamp);
+        game.playerById(event.playerId).applyEvent( event ); // resync
     }
 }
 
 function keyboard( key ) {
-    player = keyMap.playerByKey(key);
-    switch( key ) {
-        case 'LEFT':
-            gameSystem.onEvent(player.turnLeft());
-            break;
-    }
+    // player = playerByKey[key]; // if many players on a single keyboard
+    event = eventByKey[key]; 
+    this.localPlayer.applyEvent( event );
 }
