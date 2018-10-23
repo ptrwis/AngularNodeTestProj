@@ -4,62 +4,185 @@ import { Curve } from "./curve";
 import { Shape } from "./shape";
 import { Renderer } from "../../frontend/src/app/components/renderer/renderer.interface";
 
+const sin = Math.sin;
+const cos = Math.cos;
+
 /**
  * throw:
  * x(t) = x0 + v0*t*cos(a)
  * y(t) = y0 + v0*t*sin(a) - (gt^2)/2
+ * TODO: https://en.wikipedia.org/wiki/Newton%27s_method
  */
 
+ /*
 function distThrow() {
-    // const dt0 = t - t_0;
-    // const dt1 = t - t_1;
     const t0 = 123;
     const t1 = 321;
     return Math.sqrt(
         (
-            (x0 + v0 * (t-t0) * cos(alfa))
+            (x0 + v0 * (t-t0) * cos(α))
             -
-            (x1 + v1 * (t-t1) * cos(beta))
+            (x1 + v1 * (t-t1) * cos(β))
         )^2 
         + 
         (
-            (y0 + v0 * (t-t0) * sin(alfa) - 0.5 * g * (t-t0)^2 )
+            (y0 + v0 * (t-t0) * sin(α) - 0.5 * g * (t-t0)^2 )
             -
-            (x1 + v1 * (t-t1) * sin(beta) - 0.5 * g * (t-t1)^2 )
+            (y1 + v1 * (t-t1) * sin(β) - 0.5 * g * (t-t1)^2 )
         )^2 
     );
 }
 
-/**
- * by t
- * Wolfram:
- * D[
- *  Sqrt[(x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β])^2 + (-0.5 g (t - t0)^2 + 0.5 g (t - t1)^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β])^2]
- *  ,t
- * ]
- * =
- * (2 (v0 Cos[α] - v1 Cos[β]) (x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β]) + 2 (1. g t0 - 1. g t1 + 1. v0 Sin[α] - 1. v1 Sin[β]) (1. g t t0 - 0.5 g t0^2 - 1. g t t1 + 0.5 g t1^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β]))/(2 Sqrt[(x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β])^2 + (1. g t t0 - 0.5 g t0^2 - 1. g t t1 + 0.5 g t1^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β])^2])
- */
-const derivativeDistThrow () {
+// for what t dist(center1, center2) = r1 + r2
+
+function wmMaximaDerivationOfDist () {
+    let
+        t0, t1, 
+        v0, v1,
+        α, β,
+        g, 
+        y0, y1,
+        x0, x1;
     return
     (
-        2 
-        * (  g * t0  -  g * t1  +  v0 * sin(α)  -  v1 * sin(β) ) 
-        * (  g * t * t0  -  g * t * t1  -  0.5 * g * t0^2  +  0.5 * g * t1^2  +  v0 * sin(α) * (t - t0)  -  v1 * sin(β) * (t - t1) - x1 + y0  ) 
+        2
+        *(-v1*sin(β)+v0*sin(α)+1.0*g*(t-t1)-1.0*g*(t-t0))
+        *(-(t-t1)*v1*sin(β)+(t-t0)*v0*sin(α)-y1+y0+0.5*g*(t-t1)^2-0.5*g*(t-t0)^2)
         +
-        2 
-        * (  v0 * cos(α)  -  v1 * cos(β)  )
-        * (  v0 * cos(α) * (t - t0)  -  v1 * cos(β) * (t - t1) + x0 - x1  )
+        2
+        *(v0*cos(α)-v1*cos(β))
+        *(-(t-t1)*v1*cos(β)+(t-t0)*v0*cos(α)-x1+x0)
     )
     /
     (
-        2 
-        * sqrt(
-            (g * t * t0 - g * t * t1 - 0.5 * g * t0^2 + 0.5 * g * t1^2 + v0 * sin(α) * (t - t0) - v1 * sin(β) * (t - t1) - x1 + y0)^2 
+        2
+        *sqrt(
+            (-(t-t1)*v1*sin(β)+(t-t0)*v0*sin(α)-y1+y0+0.5*g*(t-t1)^2-0.5*g*(t-t0)^2)^2
             +
-            (v0 * cos(α) * (t - t0) - v1 * cos(β) * (t - t1) + x0 - x1)^2
+            (-(t-t1)*v1*cos(β)+(t-t0)*v0*cos(α)-x1+x0)^2
         )
     );
+}
+*/
+
+function timeForZeroNominator(){
+    // t = (2*t1*v1^2*sin(β)^2+((-2*t1-2*t0)*v0*v1*sin(α)-2*v1*y1+2*v1*y0+(3*g*t1^2-2*g*t0*t1-g*t0^2)*v1)*sin(β)-2*t1*v1^2*cos(β)^2+((2*t1+2*t0)*v0*v1*cos(α)+2*v1*x1-2*v1*x0)*cos(β)+2*t0*v0^2*sin(α)^2+(2*v0*y1-2*v0*y0+(-g*t1^2-2*g*t0*t1+3*g*t0^2)*v0)*sin(α)-2*t0*v0^2*cos(α)^2+(2*v0*x0-2*v0*x1)*cos(α)+(2*g*t0-2*g*t1)*y1+(2*g*t1-2*g*t0)*y0+g^2*t1^3-g^2*t0*t1^2-g^2*t0^2*t1+g^2*t0^3)/(2*v1^2*sin(β)^2+((4*g*t1-4*g*t0)*v1-4*v0*v1*sin(α))*sin(β)-2*v1^2*cos(β)^2+4*v0*v1*cos(α)*cos(β)+2*v0^2*sin(α)^2+(4*g*t0-4*g*t1)*v0*sin(α)-2*v0^2*cos(α)^2+2*g^2*t1^2-4*g^2*t0*t1+2*g^2*t0^2);
+    let
+        t0, t1, 
+        v0, v1,
+        α, β,
+        g, 
+        y0, y1,
+        x0, x1;
+    const sina = Math.sin(α);
+    const sinb = Math.sin(β);
+    const cosa = Math.cos(α);
+    const cosb = Math.cos(β);
+    return (2*t1*v1^2*sinb^2+((-2*t1-2*t0)*v0*v1*sina-2*v1*y1+2*v1*y0+(3*g*t1^2-2*g*t0*t1-g*t0^2)*v1)*sinb-2*t1*v1^2*cosb^2+((2*t1+2*t0)*v0*v1*cosa+2*v1*x1-2*v1*x0)*cosb+2*t0*v0^2*sina^2+(2*v0*y1-2*v0*y0+(-g*t1^2-2*g*t0*t1+3*g*t0^2)*v0)*sina-2*t0*v0^2*cosa^2+(2*v0*x0-2*v0*x1)*cosa+(2*g*t0-2*g*t1)*y1+(2*g*t1-2*g*t0)*y0+g^2*t1^3-g^2*t0*t1^2-g^2*t0^2*t1+g^2*t0^3)/(2*v1^2*sinb^2+((4*g*t1-4*g*t0)*v1-4*v0*v1*sina)*sinb-2*v1^2*cosb^2+4*v0*v1*cosa*cosb+2*v0^2*sina^2+(4*g*t0-4*g*t1)*v0*sina-2*v0^2*cosa^2+2*g^2*t1^2-4*g^2*t0*t1+2*g^2*t0^2);
+}
+
+/**
+ * 
+ */
+function ddd() {
+    let
+        t0, t1, 
+        v0, v1,
+        α, β,
+        g, 
+        y0, y1,
+        x0, x1;
+    const
+    X =  8*t1*v1^2*sin(β)^2+((-8*t1-8*t0)*v0*v1*sin(α)-8*v1*y1+8*v1*y0+(12*g*t1^2-8*g*t0*t1-4*g*t0^2)*v1)*sin(β)+8*t1*v1^2*cos(β)^2+((-8*t1-8*t0)*v0*v1*cos(α)-8*v1*x1+8*v1*x0)*cos(β)+8*t0*v0^2*sin(α)^2+(8*v0*y1-8*v0*y0+(-4*g*t1^2-8*g*t0*t1+12*g*t0^2)*v0)*sin(α)+8*t0*v0^2*cos(α)^2+(8*v0*x1-8*v0*x0)*cos(α)+(8*g*t0-8*g*t1)*y1+(8*g*t1-8*g*t0)*y0+4*g^2*t1^3-4*g^2*t0*t1^2-4*g^2*t0^2*t1+4*g^2*t0^3 ,
+
+    Y = 
+    (   - 4 g^2 t0^3 
+        + 4 g^2 t1 t0^2 
+        - 12 g v0 sin(α) t0^2 
+        + 4 g v1 sin(β) t0^2 
+        + 4 g^2 t1^2 t0 
+        - 8 v0^2 cos^2(α) t0 
+        - 8 v0^2 sin^2(α) t0 
+        + 8 g y0 t0 
+        - 8 g y1 t0 
+        + 8 v0 v1 cos(α) cos(β) t0 
+        + 8 g t1 v0 sin(α) t0 
+        + 8 g t1 v1 sin(β) t0 
+        + 8 v0 v1 sin(α) sin(β) t0 
+        - 4 g^2 t1^3 
+        - 8 t1 v1^2 cos^2(β) 
+        - 8 t1 v1^2 sin^2(β) 
+        - 8 g t1 y0 
+        + 8 g t1 y1 
+        + 8 v0 x0 cos(α) 
+        - 8 v0 x1 cos(α) 
+        - 8 v1 x0 cos(β) 
+        + 8 v1 x1 cos(β) 
+        + 8 t1 v0 v1 cos(α) cos(β) 
+        + 4 g t1^2 v0 sin(α) 
+        + 8 v0 y0 sin(α) 
+        - 8 v0 y1 sin(α) 
+        - 12 g t1^2 v1 sin(β) 
+        - 8 v1 y0 sin(β) 
+        + 8 v1 y1 sin(β) 
+        + 8 t1 v0 v1 sin(α) sin(β)
+    )^2  - 4 * (
+          4 t0^2 g^2 
+        + 4 t1^2 g^2 
+        - 8 t0 t1 g^2 
+        + 8 t0 v0 sin(α) g 
+        - 8 t1 v0 sin(α) g 
+        - 8 t0 v1 sin(β) g 
+        + 8 t1 v1 sin(β) g 
+        + 4 v0^2 cos^2(α) 
+        + 4 v1^2 cos^2(β) 
+        + 4 v0^2 sin^2(α) 
+        + 4 v1^2 sin^2(β) 
+        - 8 v0 v1 cos(α) cos(β) 
+        - 8 v0 v1 sin(α) sin(β)
+    ) * (
+          g^2 t0^4 
+        + 4 g v0 t0^3 sin(α)  
+        - 2 g^2 t1^2 t0^2 
+        + 4 v0^2 t0^2 cos(α)^2 
+        + 4 v0^2 t0^2 sin(α)^2 
+        - 4 g y0 t0^2 + 4 g y1 t0^2 
+        - 4 g t1 v1 sin(β) t0^2 
+        - 8 v0 x0 cos(α) t0 
+        + 8 v0 x1 cos(α) t0 
+        - 8 t1 v0 v1 cos(α) cos(β) t0 
+        - 4 g t1^2 v0 sin(α) t0 
+        - 8 v0 y0 sin(α) t0 
+        + 8 v0 y1 sin(α) t0 
+        - 8 t1 v0 v1 sin(α) sin(β) t0 
+        + g^2 t1^4 
+        - 4 r^2 
+        - 4 r0^2 
+        + 4 x0^2 
+        + 4 x1^2 
+        + 4 y0^2 
+        + 4 y1^2 
+        + 4 t1^2 v1^2 cos(β)^2 
+        + 4 t1^2 v1^2 sin(β)^2
+        - 8 r r0 
+        - 8 x0 x1 
+        + 4 g t1^2 y0 
+        - 4 g t1^2 y1 
+        - 8 y0 y1 
+        + 8 t1 v1 x0 cos(β) 
+        - 8 t1 v1 x1 cos(β) 
+        + 4 g t1^3 v1 sin(β) 
+        + 8 t1 v1 y0 sin(β) 
+        - 8 t1 v1 y1 sin(β)
+    ),
+
+    Z = 8*v1^2*sin(β)^2+((16*g*t1-16*g*t0)*v1-16*v0*v1*sin(α))*sin(β)+8*v1^2*cos(β)^2-16*v0*v1*cos(α)*cos(β)+8*v0^2*sin(α)^2+(16*g*t0-16*g*t1)*v0*sin(α)+8*v0^2*cos(α)^2+8*g^2*t1^2-16*g^2*t0*t1+8*g^2*t0^2;
+
+    return
+    {
+        ( X - sqrt( Y ) ) / Z,
+        ( X + sqrt( Y ) ) / Z
+    };
 }
 
  /**
