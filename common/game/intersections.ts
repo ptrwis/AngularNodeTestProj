@@ -5,6 +5,102 @@ import { Shape } from "./shape";
 import { Renderer } from "../../frontend/src/app/components/renderer/renderer.interface";
 
 /**
+ * throw:
+ * x(t) = x0 + v0*t*cos(a)
+ * y(t) = y0 + v0*t*sin(a) - (gt^2)/2
+ */
+
+function distThrow() {
+    // const dt0 = t - t_0;
+    // const dt1 = t - t_1;
+    const t0 = 123;
+    const t1 = 321;
+    return Math.sqrt(
+        (
+            (x0 + v0 * (t-t0) * cos(alfa))
+            -
+            (x1 + v1 * (t-t1) * cos(beta))
+        )^2 
+        + 
+        (
+            (y0 + v0 * (t-t0) * sin(alfa) - 0.5 * g * (t-t0)^2 )
+            -
+            (x1 + v1 * (t-t1) * sin(beta) - 0.5 * g * (t-t1)^2 )
+        )^2 
+    );
+}
+
+/**
+ * by t
+ * Wolfram:
+ * D[
+ *  Sqrt[(x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β])^2 + (-0.5 g (t - t0)^2 + 0.5 g (t - t1)^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β])^2]
+ *  ,t
+ * ]
+ * =
+ * (2 (v0 Cos[α] - v1 Cos[β]) (x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β]) + 2 (1. g t0 - 1. g t1 + 1. v0 Sin[α] - 1. v1 Sin[β]) (1. g t t0 - 0.5 g t0^2 - 1. g t t1 + 0.5 g t1^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β]))/(2 Sqrt[(x0 - x1 + (t - t0) v0 Cos[α] - (t - t1) v1 Cos[β])^2 + (1. g t t0 - 0.5 g t0^2 - 1. g t t1 + 0.5 g t1^2 - x1 + y0 + (t - t0) v0 Sin[α] - (t - t1) v1 Sin[β])^2])
+ */
+const derivativeDistThrow () {
+    return
+    (
+        2 
+        * (  g * t0  -  g * t1  +  v0 * sin(α)  -  v1 * sin(β) ) 
+        * (  g * t * t0  -  g * t * t1  -  0.5 * g * t0^2  +  0.5 * g * t1^2  +  v0 * sin(α) * (t - t0)  -  v1 * sin(β) * (t - t1) - x1 + y0  ) 
+        +
+        2 
+        * (  v0 * cos(α)  -  v1 * cos(β)  )
+        * (  v0 * cos(α) * (t - t0)  -  v1 * cos(β) * (t - t1) + x0 - x1  )
+    )
+    /
+    (
+        2 
+        * sqrt(
+            (g * t * t0 - g * t * t1 - 0.5 * g * t0^2 + 0.5 * g * t1^2 + v0 * sin(α) * (t - t0) - v1 * sin(β) * (t - t1) - x1 + y0)^2 
+            +
+            (v0 * cos(α) * (t - t0) - v1 * cos(β) * (t - t1) + x0 - x1)^2
+        )
+    );
+}
+
+ /**
+  * round move:
+  * x0 + r*sin(wt+f0)
+  * y0 + r*cos(wt+f0)
+  */
+
+function distRoundMove(){
+    let x0, y0, 
+        x1, y1, 
+        // w0, w1,
+        w,
+        t, t0, t1, 
+        f0, f1, 
+        r0, r1;
+    return Math.sqrt( 
+        ( (x0 + r0*sin(w*(t-t0)+f0)) - (x1 + r1*sin(w*(t-t1)+f1)) )^2 
+        + 
+        ( (y0 + r0*cos(w*(t-t0)+f0)) - (y1 + r1*cos(w*(t-t1)+f1)) )^2
+    );
+}
+
+// dist by t
+function derivativeDistRoundMove(){
+    let x0, y0, 
+        x1, y1, 
+        w, 
+        t, t0, t1, 
+        f0, f1, 
+        r0, r1;
+    return 2 * w * (
+        -(y0 - y1) * (r0 * sin(f0 + t * w - t0 * w) - r1 * sin(f1 + t * w - t1 * w)) 
+        + r0 * (x0 - x1) * cos(f0 + w * (t - t0)) 
+        + r1 * (x1 - x0) * cos(f1 + t * w - t1 * w)
+    );
+}
+
+
+
+/**
  * 
  */
 class Cursor {
