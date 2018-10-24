@@ -2,6 +2,7 @@ import { Segment } from '../../../../../common/game/segment';
 import { Curve } from '../../../../../common/game/curve';
 import { Vec2d } from '../../../../../common/game/vec2d';
 import { Renderer } from './renderer.interface';
+import { Throw } from '../../../../../common/game/throw';
 
 /**
  * Draw game using HTML Canvas
@@ -59,5 +60,16 @@ export class CanvasRenderer implements Renderer {
     this.ctx.stroke();
   }
 
+  drawThrow( t: Throw ) {
+    const step = 1;
+    for (let i = step; i < 50; i += step ) {
+      this.drawSegment(
+        new Segment(
+          t.count(i - step),
+          t.count(i),
+        )
+      );
+    }
+  }
 
 }

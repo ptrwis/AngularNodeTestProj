@@ -23,6 +23,7 @@ import { CollisionsComponent } from './components/collisions/collisions.componen
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
 import { WebsocketService } from './services/webosocket.service';
+import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +34,8 @@ import { WebsocketService } from './services/webosocket.service';
     SignInComponent,
     SettingsComponent,
     OwlComponent,
-    CollisionsComponent
+    CollisionsComponent,
+    ThrowsgraphComponent
   ],
   imports: [
     AppRoutingModule,

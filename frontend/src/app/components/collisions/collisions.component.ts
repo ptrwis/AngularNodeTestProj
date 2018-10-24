@@ -5,8 +5,7 @@ import { Segment } from '../../../../../common/game/segment';
 import { Curve } from '../../../../../common/game/curve';
 import { intersectionCurveCurve,
          intersectionCurveSegment,
-         intersectionSegmentSegment,
-         crashTest } from '../../../../../common/game/intersections';
+         intersectionSegmentSegment } from '../../../../../common/game/intersections';
 import { CanvasRenderer } from '../renderer/canvas.renderer';
 
 @Component({
