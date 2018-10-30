@@ -16,10 +16,13 @@ class Cursor {
  * 
  */
 class Player{
+    events: AbstractMove[];
     constructor(
-        public state0: Cursor,
+        public snapshot: Cursor,
         public event: AbstractMove // AbstractMove is like linked list, 'event' is the head
-    ){}
+    ){
+        this.events = [ event ];
+    }
     applyEvent( move: AbstractMove ) {
         move.prev = this.event;
     }
@@ -28,19 +31,6 @@ class Player{
         // let state = this.state0;
         // this.events.forEach( event => state = event.state( state ) ); // reduce?
     };
-}
-
-class Throw {
-    pos: Vec2d;
-    dir: Vec2d;
-    timestamp: number;
-    // Returns timestamp of the moment when distance between 'this' and 'other' is minimal, earliest in time.
-    dist( other: Throw, at: number ): number | undefined {
-        // 'at' is timestamp at which we count the distance.
-        if ( at < this.timestamp || at < other.timestamp )
-            return undefined;
-        return 0;
-    }
 }
 
 /**
@@ -84,10 +74,24 @@ class GameServer {
     }
 }
 
+// enum?
+abstract class AbstractEvent {
+    constructor( public timestamp: number ) {}
+}
+// player hit the wall
+class WallHit extends AbstractEvent { }
+// player hit another player
+class PlayerHit extends AbstractEvent { }
+// player hit an item
+class ItemHit extends AbstractEvent { }
+
+// type IUnionType = WallHit | PlayerHit;
+
 class GameClient {
     startTs: number;
     seed: number;
     players: Player[]; // inc local player
+    events: AbstractEvent; // sorted by timestamp
 
     start() {
         this.handleEvent( this.countClosestEvent() );
@@ -107,6 +111,9 @@ class GameClient {
             },
             now - event.timestamp
         );
+    }
+    handleEvent( e: AbstractMove ) {
+
     }
 }
 
