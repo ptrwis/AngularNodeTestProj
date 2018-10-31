@@ -10,6 +10,29 @@ class Cursor {
         public pos: Vec2d,
         public dir: Vec2d
     ) { }
+
+    forward( distance: number ) {
+        return new Cursor(
+            this.pos.add( this.dir.mul(distance) ),
+            this.dir
+        );
+    }
+
+    /**
+     * Rotates vector around anchor placed on vector normal to this one,
+     *  with length 'radious'.
+     * @param angle 
+     * @param radious 
+     */
+    turn( angle: number, radious: number ) {
+        const j = (angle <= 0) ? (-1) : (+1);
+        const anchor = this.pos.add( this.dir.normal().mul( j * radious) );
+        const newPos = this.pos.rotAround( angle, anchor);
+        // przenosimy wektor w okol ktorego krecimy do (0,0) i liczymy styczna do newPos
+        const newDir = newPos.sub(anchor).normal().mul( j );
+        return new Cursor(newPos, newDir);
+    }
+
 }
 
 /**
@@ -19,7 +42,7 @@ class Player{
     events: AbstractMove[];
     constructor(
         public snapshot: Cursor,
-        public event: AbstractMove // AbstractMove is like linked list, 'event' is the head
+        public event: AbstractMove
     ){
         this.events = [ event ];
     }
@@ -34,7 +57,7 @@ class Player{
 }
 
 /**
- * 
+ * AbstractMove is like linked list
  */
 abstract class AbstractMove {
     prev?: AbstractMove;
