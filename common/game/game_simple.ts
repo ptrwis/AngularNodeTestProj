@@ -2,17 +2,19 @@
 
 import { Vec2d } from "./vec2d";
 
+enum DIR { RIGHT = 1, LEFT = -1 }
+
 /**
  * player's position and direction
  */
-class Cursor {
+class Arrow {
     constructor(
         public pos: Vec2d,
         public dir: Vec2d
     ) { }
 
     forward( distance: number ) {
-        return new Cursor(
+        return new Arrow(
             this.pos.add( this.dir.mul(distance) ),
             this.dir
         );
@@ -25,15 +27,35 @@ class Cursor {
      * @param radious 
      */
     turn( angle: number, radious: number ) {
-        const j = (angle <= 0) ? (-1) : (+1);
-        const anchor = this.pos.add( this.dir.normal().mul( j * radious) );
+        const k = (angle <= 0) ? (-1) : (+1); // left/right factor
+        const anchor = this.pos.add( this.dir.normal().mul( k * radious) );
         const newPos = this.pos.rotAround( angle, anchor);
         // Przenosimy punkt w okol ktorego krecimy do (0,0), newPos znajduje sie
         // na jego brzegu. newDir to styczna do okregu w punkcie newPos
-        const newDir = newPos.sub(anchor).normal().mul( j );
-        return new Cursor(newPos, newDir);
+        const newDir = newPos.sub(anchor).normal().mul( k );
+        return new Arrow(newPos, newDir);
     }
 
+}
+
+abstract class AbstractMove {
+    constructor( public timestamp: number ) {}
+    abstract state( before: Arrow ): Arrow;
+}
+class MoveForward extends AbstractMove {
+    state( before: Arrow ): Arrow {
+        return before.forward( 1.0 * this.timestamp );
+    }
+}
+class TurnLeft extends AbstractMove {
+    state( before: Arrow ): Arrow {
+        return before.turn( - 1.0 * this.timestamp, 10.0 );
+    }
+}
+class TurnRight extends AbstractMove {
+    state( before: Arrow ): Arrow {
+        return before.turn( + 1.0 * this.timestamp, 10.0 );
+    }
 }
 
 /**
@@ -41,57 +63,25 @@ class Cursor {
  */
 class Player{
     events: AbstractMove[];
+    snap: Arrow;
     constructor(
-        public cursor: Cursor,
-        public event: AbstractMove
+        public origin: Arrow,
+        public firstEvent: AbstractMove
     ){
-        this.events = [ event ];
+        this.events = [ firstEvent ];
     }
     applyEvent( move: AbstractMove ) {
-        move.prev = this.event;
-        if ( move instanceof MoveForward ) {
-            this.cursor.forward( v * dt );
-        }
+        this.events.push( move );
+        this.snap = this.state( move.timestamp );
     }
-    state(  ) {
-        return this.event.state();
-        // let state = this.state0;
-        // this.events.forEach( event => state = event.state( state ) ); // reduce?
+    state( ts: number ): Arrow {
+        let state = this.origin;
+        this.events.forEach( event => state = event.state( state ) ); // reduce?
+        return state;
     }
 }
 
-/**
- * AbstractMove is like linked list
- */
-abstract class AbstractMove {
-    prev?: AbstractMove;
-    timestamp: number;
-    abstract current_offset();
-    state( prevState: Cursor ): Cursor {
-        return prevState + current_offset();
-    }
-    // abstract draw( timestamp: number, r : Renderer ); // Breaking SRP works for me.
-}
 
-class MoveForward extends AbstractMove {
-    current_offset( state: Cursor ): Cursor {
-        return new Cursor(
-            state.pos.add( state.dir.mul(this.timestamp - this.prev.timestamp) ) , 
-            state.dir
-        );
-    }
-}
-abstract class Turn extends AbstractMove { }
-class TurnLeft extends Turn {
-    current_offset( state: Cursor ): Cursor {
-        throw new Error("Method not implemented.");
-    }
-}
-class TurnRight extends Turn {
-    current_offset( state: Cursor ): Cursor {
-        throw new Error("Method not implemented.");
-    }
-}
 
 class GameServer {
     broadcast() { }
