@@ -28,7 +28,8 @@ class Cursor {
         const j = (angle <= 0) ? (-1) : (+1);
         const anchor = this.pos.add( this.dir.normal().mul( j * radious) );
         const newPos = this.pos.rotAround( angle, anchor);
-        // przenosimy wektor w okol ktorego krecimy do (0,0) i liczymy styczna do newPos
+        // Przenosimy punkt w okol ktorego krecimy do (0,0), newPos znajduje sie
+        // na jego brzegu. newDir to styczna do okregu w punkcie newPos
         const newDir = newPos.sub(anchor).normal().mul( j );
         return new Cursor(newPos, newDir);
     }
@@ -41,19 +42,22 @@ class Cursor {
 class Player{
     events: AbstractMove[];
     constructor(
-        public snapshot: Cursor,
+        public cursor: Cursor,
         public event: AbstractMove
     ){
         this.events = [ event ];
     }
     applyEvent( move: AbstractMove ) {
         move.prev = this.event;
+        if ( move instanceof MoveForward ) {
+            this.cursor.forward( v * dt );
+        }
     }
     state(  ) {
         return this.event.state();
         // let state = this.state0;
         // this.events.forEach( event => state = event.state( state ) ); // reduce?
-    };
+    }
 }
 
 /**
@@ -77,12 +81,13 @@ class MoveForward extends AbstractMove {
         );
     }
 }
-class MoveLeft extends AbstractMove {
+abstract class Turn extends AbstractMove { }
+class TurnLeft extends Turn {
     current_offset( state: Cursor ): Cursor {
         throw new Error("Method not implemented.");
     }
 }
-class MoveRight extends AbstractMove {
+class TurnRight extends Turn {
     current_offset( state: Cursor ): Cursor {
         throw new Error("Method not implemented.");
     }
