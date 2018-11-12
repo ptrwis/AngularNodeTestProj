@@ -19,11 +19,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { SignInComponent } from './components/signin/signin.component';
 import { OwlComponent } from './components/owl/owl.component';
 import { CollisionsComponent } from './components/collisions/collisions.component';
+import { StylingComponent } from './components/styling/styling.component';
 
 import { AuthGuard } from './guards/auth.guard';
 import { AuthService } from './services/auth.service';
 import { WebsocketService } from './services/webosocket.service';
 import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
+import { FortumoComponent } from './components/fortumo/fortumo.component';
 
 @NgModule({
   declarations: [
@@ -35,7 +37,9 @@ import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.compo
     SettingsComponent,
     OwlComponent,
     CollisionsComponent,
-    ThrowsgraphComponent
+    ThrowsgraphComponent,
+    StylingComponent,
+    FortumoComponent
   ],
   imports: [
     AppRoutingModule,

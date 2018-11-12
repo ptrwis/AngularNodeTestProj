@@ -95,6 +95,9 @@ export class WebsocketService {
   /**
    * Encode message (json, msgpack, ...) and send.
    * This is internal, private method used by others.
+   * TODO: because of the caching on the server side, msg should have structure of:
+   * { id, content } and only only content should be msgpacked. This way server can
+   * cache msgpacked content (eg list of rooms) and send it back changing only (correlation) id.
    * @param ev
    * @param onSentListener
    * @returns value returned by onSentListener

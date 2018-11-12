@@ -8,6 +8,8 @@ import { AuthGuard } from './guards/auth.guard';
 import { SettingsComponent } from './components/settings/settings.component';
 import { CollisionsComponent } from './components/collisions/collisions.component';
 import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
+import { StylingComponent } from './components/styling/styling.component';
+import { FortumoComponent } from './components/fortumo/fortumo.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/roomlist', pathMatch: 'full', canActivate: [AuthGuard] },
@@ -16,6 +18,8 @@ const routes: Routes = [
   { path: 'signin',         component: SignInComponent },
   { path: 'collisions',     component: CollisionsComponent },
   { path: 'throws',         component: ThrowsgraphComponent },
+  { path: 'styling',        component: StylingComponent },
+  { path: 'fortumo',        component: FortumoComponent },
   { path: 'createroom/:id', component: CreateRoomComponent, canActivate: [AuthGuard] },
   { path: 'gameplay/:id',   component: GamePlayComponent, canActivate: [AuthGuard] }
 ];

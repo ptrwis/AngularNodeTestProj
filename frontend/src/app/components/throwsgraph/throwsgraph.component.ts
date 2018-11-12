@@ -104,15 +104,15 @@ export class ThrowsgraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.throw1 = new Throw(
             new Vec2d(w2 - 20, h2),
-            new Vec2d( 1.0, 1.0),
-            10.0
+            new Vec2d( 1.0, -1.0),
+            50.0
         );
         this.throw1.timestamp = 0;
 
         this.throw2 = new Throw(
             new Vec2d(w2 + 20, h2),
-            new Vec2d( -1.0, 1.0),
-            10.0
+            new Vec2d( -1.0, -1.0),
+            50.0
         );
         this.throw2.timestamp = 0;
     }
@@ -124,15 +124,16 @@ export class ThrowsgraphComponent implements OnInit, OnDestroy, AfterViewInit {
             m.y - this.canvas.getBoundingClientRect().top
         );
         switch ( this.selectedThrow ) {
-            case 'throw1':
-                this.throw1.dir = this.mouse.sub(this.throw1.pos);
-                this.throw1.v0 = this.throw1.dir.length() ;
-                this.ctx.strokeRect( this.mouse.x, this.mouse.y, 2, 2 );
-                break;
-            case 'throw2':
-                this.throw2.dir = this.mouse.sub(this.throw2.pos);
-                this.throw2.v0 = this.throw2.dir.length() ;
-                break;
+            case 'throw1': {
+                const sub = this.mouse.sub(this.throw1.pos);
+                this.throw1.v0 = sub.length() ;
+                this.throw1.dir = sub.normalize();
+            } break;
+            case 'throw2': {
+                const sub = this.mouse.sub(this.throw2.pos);
+                this.throw2.v0 = sub.length() ;
+                this.throw2.dir = sub.normalize();
+            } break;
         }
     }
     handleMouseUp( ) {
@@ -152,18 +153,18 @@ export class ThrowsgraphComponent implements OnInit, OnDestroy, AfterViewInit {
 
         this.ctx.strokeStyle = '#00ff00';
         this.renderer.drawThrow( this.throw1 );
-        this.ctx.strokeStyle = '#aaffaa';
+        this.ctx.strokeStyle = '#ff0000';
         this.renderer.drawSegment( new Segment(
             this.throw1.pos,
-            this.throw1.pos.add(this.throw1.dir)
+            this.throw1.pos.add(this.throw1.dir.mul(this.throw1.v0))
         ) );
 
         this.ctx.strokeStyle = '#0000ff';
         this.renderer.drawThrow( this.throw2 );
-        this.ctx.strokeStyle = '#aaaaff';
+        this.ctx.strokeStyle = '#ff0000';
         this.renderer.drawSegment( new Segment(
             this.throw2.pos,
-            this.throw2.pos.add(this.throw2.dir)
+            this.throw2.pos.add(this.throw2.dir.mul(this.throw2.v0))
         ) );
 
         this.ctx.strokeStyle = '#ff0000';

@@ -19,7 +19,7 @@ export class Throw {
     count(dt: number) {
         return new Vec2d(
             this.pos.x + this.v0 * Math.cos(this.dir.angle()) * dt,
-            this.pos.y + this.v0 * Math.sin(this.dir.angle()) * dt - 0.5 * 9.81 * (dt ** 2),
+            this.pos.y + this.v0 * Math.sin(this.dir.angle()) * dt + 0.5 * 9.81 * (dt ** 2),
         );
     }
 }

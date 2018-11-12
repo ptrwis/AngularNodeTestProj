@@ -62,8 +62,8 @@ class TurnRight extends AbstractMove {
  * 
  */
 class Player{
-    events: AbstractMove[];
-    snap: Arrow;
+    moves: AbstractMove[];
+    snap: Arrow; // arrow on last move
     constructor(
         public origin: Arrow,
         public firstEvent: AbstractMove
