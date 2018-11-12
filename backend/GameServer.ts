@@ -344,5 +344,12 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('close', () => gameServer.rageQuit(peer));
 });
 
+app.get('/payment', (req, res) => {
+    for (const key of Object.keys(req.query)) {
+        console.log(key, req.query[key]);
+    }
+    res.send('Hello World!');
+} );
+
 // start
 server.listen(process.env.PORT || 8999);
