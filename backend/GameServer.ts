@@ -344,12 +344,16 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('close', () => gameServer.rageQuit(peer));
 });
 
-app.get('/payment', (req, res) => {
+app
+.get('/*', (req, res) => {
+    let resp = `${req.path}`;
     for (const key of Object.keys(req.query)) {
-        console.log(key, req.query[key]);
+        resp += `BREJK ${key} => ${req.query[key]}`;
     }
-    res.send('Hello World!');
+    console.log( resp.replace(/BREJK/g, '\n') );
+    res.send( resp.replace(/BREJK/g, '<br />') );
 } );
 
 // start
-server.listen(process.env.PORT || 8999);
+// server.listen(process.env.PORT || 8080);
+server.listen(8080, '192.168.1.26');
