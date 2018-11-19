@@ -16,8 +16,8 @@ import { AuthService } from '../../services/auth.service';
   <div style="width: 100%; height: 100%; 
        background-color: black;
        background-image: radial-gradient(circle at top right,    #550000 1%, transparent 70%),
-                         
                          radial-gradient(circle at top left,     #000055 1%, transparent 70%);" >
+
     <span style="font-family: 'Tangerine', cursive; 
                  font-size: 80px;
                  color: white;
@@ -131,6 +131,48 @@ import { AuthService } from '../../services/auth.service';
       <use xlink:href="#r6" transform="rotate(270 160 160)"/>
       <use xlink:href="#r6" transform="rotate(330 160 160)"/>
     </svg>
+  </div>
+  
+  <!-- https://codepen.io/Trinca/pen/XKwKby -->
+
+  <div id="container">
+    <div class="neon-circle">
+      <div class="sign-one">
+        Cocktails<br>
+        <div class="and">&</div>
+        ~Dreams~
+      </div>
+    </div>
+  </div>
+
+  <div id="container">
+    <div class="sign-two">
+      <i class="fa fa-heart-o" aria-hidden="true"></i>
+      <div class="off">G</div>IRLS<br>
+      <i class="fa fa-heart-o" aria-hidden="true"></i>
+      GI<div class="off">RL</div>S<br>
+      <i class="fa fa-heart-o heart-off" aria-hidden="true"></i>
+      GIRLS<br>
+    </div>
+  </div>
+
+  <div id="container">
+    <div class="sign-three">
+      <div class="restaurant">Restaurant</div>
+      <div class="bar">Bar</div>
+      <div class="jackpots">JACKPOTS</div>
+    </div>
+  </div>
+
+  <div id="container">
+    <div class="sign-four">
+      EXCHANGE<br>
+      <i class="fa fa-usd currency" aria-hidden="true"></i>
+      <i class="fa fa-eur currency" aria-hidden="true"></i>
+      <i class="fa fa-gbp currency" aria-hidden="true"></i>
+      <i class="fa fa-jpy currency" aria-hidden="true"></i>
+      <i class="fa fa-rub currency" aria-hidden="true"></i>
+    </div>
   </div>
 
   </div>
