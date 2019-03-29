@@ -2,13 +2,13 @@
 <div *ngIf="authService.isAuth() == false">
     <input type="text" pInputText [(ngModel)]="username" placeholder="asd">
     <input type="text" pInputText [(ngModel)]="password" placeholder="asd">
-    <p-button label="Sign In" (onClick)="handleSignIn($event)"></p-button>
+    <button (onClick)="handleSignIn($event)">Sign In</button>
     <br />
-    <p-button label="John Rambo" (onClick)="signInAs('John Rambo','qwe')"></p-button>
-    <p-button label="Billy Kid" (onClick)="signInAs('Billy Kid','asd')"></p-button>
-    <p-button label="Jimmy 11Fingerz" (onClick)="signInAs('Jimmy 11Fingerz','zxc')"></p-button>
+    <button (click)="signInAs('John Rambo','qwe')">John Rambo</button>
+    <button (click)="signInAs('Billy Kid','asd')">Billy Kid</button>
+    <button (click)="signInAs('Jimmy 11Fingerz','zxc')">Jimmy 11Fingerz</button>
 </div>
 
 <div *ngIf="authService.isAuth() == true" >
-  <p-button label="Sign Out" (onClick)="handleSignOut($event)"></p-button>
+  <button (onClick)="handleSignOut($event)">Sign Out</button>
 </div>

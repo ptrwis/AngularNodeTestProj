@@ -1,6 +1,8 @@
 import { AddTwoNumbersReq, AddResultResp } from './../common/protocol/addition';
 import express from 'express';
+import * as fs from 'fs';
 import * as http from 'http';
+import * as https from 'https';
 import * as WebSocket from 'ws';
 import * as msgpack from 'msgpack-lite';
 import { MSG_TYPE, Result } from '../common/protocol/msg_types';
@@ -331,7 +333,11 @@ class GameServer {
  * SETUP AND START
  */
 const app = express();
-const server = http.createServer(app);
+// const server = http.createServer(app);
+const server = https.createServer({
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+}, app);
 const wss = new WebSocket.Server({ server });
 let gameServer = new GameServer();
 
@@ -356,4 +362,4 @@ app
 
 // start
 // server.listen(process.env.PORT || 8080);
-server.listen(8080, '192.168.1.26');
+server.listen(8080, '192.168.1.13');

@@ -16,7 +16,7 @@ export class AppComponent implements OnInit {
   connState: string;
 
   constructor( private router: Router,
-               private authService: AuthService,
+               public authService: AuthService,
                private wss: WebsocketService) {
   }
 

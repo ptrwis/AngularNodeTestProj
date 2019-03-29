@@ -2,13 +2,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-// PrimeNG components
-import {ButtonModule} from 'primeng/button';
-import {RadioButtonModule} from 'primeng/radiobutton';
-import {CalendarModule} from 'primeng/calendar';
-import {ListboxModule} from 'primeng/listbox';
-import {TableModule} from 'primeng/table';
-import {SliderModule} from 'primeng/slider';
 
 import { AppComponent } from './components/app/app.component';
 import { RoomlistComponent } from './components/roomlist/roomslist.component';
@@ -45,13 +38,7 @@ import { FortumoComponent } from './components/fortumo/fortumo.component';
     AppRoutingModule,
     FormsModule,
     BrowserModule,
-    ButtonModule,
-    RadioButtonModule,
-    BrowserAnimationsModule,
-    CalendarModule,
-    ListboxModule,
-    TableModule,
-    SliderModule
+    BrowserAnimationsModule
   ],
   providers: [
     WebsocketService,

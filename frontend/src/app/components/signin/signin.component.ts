@@ -19,7 +19,7 @@ export class SignInComponent implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private location: Location,
-    private authService: AuthService
+    public authService: AuthService
   ) {
   }
 

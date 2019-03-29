@@ -48,12 +48,12 @@ export class CanvasRenderer implements Renderer {
     this.ctx.stroke();
   }
 
-  drawCircle(pos: Vec2d) {
+  drawCircle(pos: Vec2d, r: number) {
     this.ctx.beginPath();
     {
       this.ctx.arc(
         pos.x, pos.y,
-        5, // radious
+        r, // radious
         0, 2 * Math.PI // full circle
       );
     }

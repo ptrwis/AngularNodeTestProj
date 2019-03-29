@@ -15,26 +15,21 @@ import { WebsocketService } from '../../services/webosocket.service';
   <h3>list of rooms awaiting for players to start</h3>
   <button (click)="onRefreshButtonClick()" >Refresh</button>
   <button (click)="onCreateRoomButtonClick()">Create Room</button>
-  <p-table [value]="rooms"
-           selectionMode="single"
-           [(selection)]="selectedRoom"
-           (onRowSelect)="onRowSelect($event)"
-           dataKey="id" >
-    <ng-template pTemplate="header">
-        <tr>
-            <th>Name</th>
-            <th>#Players</th>
-            <th>room id</th>
-        </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-room >
-        <tr [pSelectableRow]="room" >
-            <td>{{room.name}}</td>
-            <td>{{room.num_of_players}}</td>
-            <td>{{room.id}}</td>
-        </tr>
-    </ng-template>
-  </p-table>
+
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>#Players</th>
+      <th>room id</th>
+    </tr>
+    <tr *ngFor=" let room of rooms "
+        (click)="onRowSelect(room)" >
+      <td>{{room.name}}</td>
+      <td>{{room.num_of_players}}</td>
+      <td>{{room.id}}</td>
+    </tr>
+  </table>
+
   `,
 })
 export class RoomlistComponent implements OnInit {
@@ -64,13 +59,14 @@ export class RoomlistComponent implements OnInit {
     );
   }
 
-  onRowSelect(event) {
-    console.log( `navigate to ${this.selectedRoom.id}` );
+  onRowSelect(room) {
+    // this.selectedRoom = room;
+    console.log( `navigate to ${room.id}` );
     this.wss.call(
-      new JoinRoomReq( this.selectedRoom.id ),
+      new JoinRoomReq( room.id ),
       (resp: JoinRoomResp) => {
         if (resp.result === Result.RESULT_OK) {
-          this.router.navigate( ['./createroom', +event.data.id] );
+          this.router.navigate( ['./createroom', +room.id] );
         } else {
           alert( resp.errormsg );
         }

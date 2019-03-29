@@ -13,7 +13,7 @@ import { WebsocketService, EventSubscription } from '../../services/webosocket.s
   template: `
   <h3>create room</h3>
   <h4> {{roomname}} {{roomid}}</h4>
-  <input type="text" pInputText [(ngModel)]="roomname" placeholder="Cafe Luna">
+  <input [(ngModel)]="roomname" placeholder="Cafe Luna">
   <button (click)="onUpdateRoomnameButtonClick()" >save</button>
   <br />
   <button (click)="onStartGameButtonClick()" >Start</button>
@@ -31,8 +31,8 @@ import { WebsocketService, EventSubscription } from '../../services/webosocket.s
     <ul>
       <li *ngFor="let msg of chatMsgs">{{ msg }}</li>
     </ul>
-    <input type="text" pInputText [(ngModel)]="chatInput" />
-    <p-button label="Send" (onClick)="sendChatMsg($event)" ></p-button>
+    <input [(ngModel)]="chatInput" />
+    <button (click)="sendChatMsg($event)" >Send</button>
   </section>
   `,
 })
@@ -42,9 +42,9 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   roomname: string;
   private routeParamsSub: any; // subscription to route's parameters change
 
-  private players: PlayerDTO[];
-  private chatMsgs: string[];
-  private chatInput: string;
+  players: PlayerDTO[];
+  chatMsgs: string[];
+  chatInput: string;
 
   private dontSignalLeavingTheRoomInNgOnDestroy: boolean;
 
@@ -121,7 +121,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     alert('Not implmeneted yet ;)');
   }
 
-  sendChatMsg() {
+  sendChatMsg( m: MouseEvent ) {
     this.wss.send( new ChatMsg( this.chatInput, this.roomid ) );
     this.chatInput = '';
   }

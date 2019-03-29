@@ -14,13 +14,13 @@ import { CanvasRenderer } from '../renderer/canvas.renderer';
     <h3>testing collisions</h3>
     <div>
         <div>
-            <p-radioButton name="shape" value="curve"   [(ngModel)]="selectedShape" label="curve"> </p-radioButton>
-            <p-radioButton name="shape" value="segment" [(ngModel)]="selectedShape" label="segment"> </p-radioButton>
+            <input type="radio" name="shape" value="curve"   [(ngModel)]="selectedShape" /> curve
+            <input type="radio" name="shape" value="segment" [(ngModel)]="selectedShape" /> segment
         </div>
         <br />
         <div>
-            <p-radioButton name="transf" value="move"   [(ngModel)]="selectedTransformation" label="move"> </p-radioButton>
-            <p-radioButton name="transf" value="rotate" [(ngModel)]="selectedTransformation" label="rotate"> </p-radioButton>
+            <input type="radio" name="transf" value="move"   [(ngModel)]="selectedTransformation" /> move
+            <input type="radio" name="transf" value="rotate" [(ngModel)]="selectedTransformation" /> rotate
         </div>
     </div>
     <canvas #kanvaz
@@ -103,7 +103,7 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
             case 'segment': this.savedShape = this.segment1.copy(); break;
         }
     }
-    handleMouseUp( ) {
+    handleMouseUp( m: MouseEvent ) {
         this.dragging = false;
     }
     handleMouseMove( m: MouseEvent ) {
@@ -151,16 +151,16 @@ export class CollisionsComponent implements OnInit, OnDestroy, AfterViewInit {
         this.renderer.drawCurve(this.curve2);
 
         this.ctx.strokeStyle = '#3333ff';
-        intersectionCurveSegment(this.curve1, this.segment1).forEach( p => this.renderer.drawCircle(p)  );
-        intersectionCurveSegment(this.curve1, this.segment2).forEach( p => this.renderer.drawCircle(p)  );
-        intersectionCurveSegment(this.curve2, this.segment1).forEach( p => this.renderer.drawCircle(p)  );
-        intersectionCurveSegment(this.curve2, this.segment2).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionCurveSegment(this.curve1, this.segment1).forEach( p => this.renderer.drawCircle(p, 10)  );
+        intersectionCurveSegment(this.curve1, this.segment2).forEach( p => this.renderer.drawCircle(p, 10)  );
+        intersectionCurveSegment(this.curve2, this.segment1).forEach( p => this.renderer.drawCircle(p, 10)  );
+        intersectionCurveSegment(this.curve2, this.segment2).forEach( p => this.renderer.drawCircle(p, 10)  );
 
         this.ctx.strokeStyle = '#00ff00';
-        intersectionCurveCurve( this.curve1, this.curve2 ).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionCurveCurve( this.curve1, this.curve2 ).forEach( p => this.renderer.drawCircle(p, 10)  );
 
         this.ctx.strokeStyle = '#ff0000';
-        intersectionSegmentSegment( this.segment1, this.segment2 ).forEach( p => this.renderer.drawCircle(p)  );
+        intersectionSegmentSegment( this.segment1, this.segment2 ).forEach( p => this.renderer.drawCircle(p, 10)  );
 
         if (this.isRunning) {
             requestAnimationFrame(this.drawOnCanvas.bind(this));

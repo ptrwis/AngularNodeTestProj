@@ -6,5 +6,5 @@ export interface Renderer {
     clearScreen();
     drawSegment(segment: Segment);
     drawCurve(curve: Curve);
-    drawCircle(pos: Vec2d);
+    drawCircle(pos: Vec2d, r: number);
 }
