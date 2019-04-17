@@ -13,11 +13,19 @@ export class Throw {
 
     }
 
-    /**
-     * solve
-     * sqrt(...) == r1 + r2
-     * for t
-     * */
+/**
+    (
+        ( ( x0 + v0*cosa*(t-t0) ) - ( x1 + v1*cosb*(t-t1) ) )^2
+        +
+        (
+          ( y0 + v0*sina*(t-t0) - 0.5*g*(t-t0)^2 )
+          -
+          ( y1 + v1*sinb*(t-t1) - 0.5*g*(t-t1)^2 )
+        )^2
+    ) = M^2
+
+ * @param other 
+ */
     solve( other: Throw ): number {
         const
             t0 = this.t, t1 = other.t, // czasy rzutow

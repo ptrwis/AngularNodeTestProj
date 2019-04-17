@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { GetRoomDetailsReq, RoomDetailsResp } from '../../../../../common/protocol/get_room';
 import { LeaveTheRoomCmd, PeerLeftTheRoomMsg } from '../../../../../common/protocol/leave_room';
 import { PeerJoinedTheRoomMsg } from '../../../../../common/protocol/join_room';
+import { StartGameMsg, StartGameEvent } from '../../../../../common/protocol/start_game';
 import { ChatMsg, ChatEvent } from '../../../../../common/protocol/chat';
 import { PlayerDTO } from '../../../../../common/protocol/dto/player_dto';
 import { EVENT_TYPE } from '../../../../../common/protocol/msg_types';
@@ -55,6 +56,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   private peerJoinedTheRoomMsgSub: EventSubscription;
   private peerLeftTheRoomSub: EventSubscription;
   private chatEventSub: EventSubscription;
+  private gameStartSub: EventSubscription;
 
   constructor(
     private wss: WebsocketService,
@@ -89,6 +91,13 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
         EVENT_TYPE.CHAT_EVENT,
         (msg: ChatEvent) => this.chatMsgs = [ msg.msg, ...this.chatMsgs ]
       );
+      this.gameStartSub = this.wss.subscribeOnMessage(
+        EVENT_TYPE.START_GAME, // navigate to game
+        (msg: StartGameEvent) => {
+          console.log(`Game start event received, [seed] = ${msg.seed}`);
+          this.router.navigate(['gameplay', this.roomid]);
+        }
+      );
     });
   }
 
@@ -104,6 +113,7 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
     this.wss.unsubscribeFromMessage( this.peerJoinedTheRoomMsgSub );
     this.wss.unsubscribeFromMessage( this.peerLeftTheRoomSub );
     this.wss.unsubscribeFromMessage( this.chatEventSub );
+    this.wss.unsubscribeFromMessage( this.gameStartSub );
     // look at this.onStartGameButtonClick()
     if ( this.dontSignalLeavingTheRoomInNgOnDestroy !== true ) {
       this.wss.send( new LeaveTheRoomCmd( this.roomid ) );
@@ -114,7 +124,8 @@ export class CreateRoomComponent implements OnInit, OnDestroy {
   onStartGameButtonClick() {
     // we are not leaving the room, dont broadcast such message while abandoning the view (ngOnDestroy)
     this.dontSignalLeavingTheRoomInNgOnDestroy = true;
-    this.router.navigate( ['./gameplay', this.roomid] );
+    // this.router.navigate( ['./gameplay', this.roomid] );
+    this.wss.send( new StartGameMsg(), () => console.log(`Game start msg sent`) );
   }
 
   onUpdateRoomnameButtonClick() {

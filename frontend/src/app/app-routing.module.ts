@@ -10,6 +10,7 @@ import { CollisionsComponent } from './components/collisions/collisions.componen
 import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
 import { StylingComponent } from './components/styling/styling.component';
 import { FortumoComponent } from './components/fortumo/fortumo.component';
+import { WebRtcComponent } from './components/webrtc/webrtc.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/roomlist', pathMatch: 'full', canActivate: [AuthGuard] },
@@ -20,6 +21,7 @@ const routes: Routes = [
   { path: 'throws',         component: ThrowsgraphComponent },
   { path: 'styling',        component: StylingComponent },
   { path: 'fortumo',        component: FortumoComponent },
+  { path: 'webrtc',         component: WebRtcComponent },
   { path: 'createroom/:id', component: CreateRoomComponent, canActivate: [AuthGuard] },
   { path: 'gameplay/:id',   component: GamePlayComponent, canActivate: [AuthGuard] }
 ];

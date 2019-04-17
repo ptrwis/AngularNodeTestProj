@@ -21,6 +21,7 @@ export enum MSG_TYPE
     GET_ROOM_LIST, // resp=roomlist, rpc, response has list of rooms
     ADD,
     GET_ROOM_DETAILS,
+    START_GAME,
 
     GAME_ACTION,
     // response
@@ -41,6 +42,7 @@ export enum EVENT_TYPE
     SERVER_MSG,
     ROOM_HAS_BEEN_CREATED, // additionally, new rooms can be singaled by server
     ROOM_HAS_BEEN_CLOSED, // ... same as closing them
+    START_GAME,
 }
 
 export enum Result{

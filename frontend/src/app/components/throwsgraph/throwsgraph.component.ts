@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Input, AfterViewInit } from '@angular/core';
 import { Vec2d } from '../../../../../common/game/vec2d';
-import { g, Throw } from '../../../../../common/game/throw';
+import { g, Throw } from '../../../../../common/game/Throw';
 import { CanvasRenderer } from '../renderer/canvas.renderer';
 import { Segment } from '../../../../../common/game/segment';
 

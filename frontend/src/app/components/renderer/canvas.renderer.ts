@@ -2,7 +2,7 @@ import { Segment } from '../../../../../common/game/segment';
 import { Curve } from '../../../../../common/game/curve';
 import { Vec2d } from '../../../../../common/game/vec2d';
 import { Renderer } from './renderer.interface';
-import { Throw } from '../../../../../common/game/throw';
+import { Throw } from '../../../../../common/game/Throw';
 
 /**
  * Draw game using HTML Canvas

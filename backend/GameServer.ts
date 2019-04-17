@@ -14,6 +14,7 @@ import { ChatEvent, ChatMsg } from '../common/protocol/chat';
 import { CreateRoomReq, RoomCreatedResp, RoomCreatedEvent } from '../common/protocol/create_room';
 import { SignInReq, SignInResp } from '../common/protocol/sign_in';
 import { SignUpReq, SignUpResp } from '../common/protocol/sign_up';
+import { StartGameEvent } from '../common/protocol/start_game';
 import { GetRoomListReq, RoomListResp } from '../common/protocol/get_room_list';
 import { RoomDTO } from '../common/protocol/dto/room_dto';
 import { PlayerDTO } from '../common/protocol/dto/player_dto';
@@ -172,7 +173,7 @@ class GameServer {
     rageQuit(peer: Peer) {
         // here we assume peer can be in many rooms ( like in chat )
         // this.roomsById.forEach((room) => room.leave(peer)); // for games it sucks
-        console.log( `Rage Quit [${peer.user.username}] in ${peer.rooms.length} rooms` );
+        console.log( `[${peer.user.username}] closed conn, before quitting present in ${peer.rooms.length} rooms` );
         peer.rooms.forEach((room) => 
             this.route(peer, msgpack.encode( new LeaveTheRoomCmd(room.id) ) )
         );
@@ -308,6 +309,13 @@ class GameServer {
                     ) 
                 );
             } break;
+            case MSG_TYPE.START_GAME: {
+                // for now assume player is only in one room
+                const room = sender.rooms[0];
+                console.log(`Game start msg received and broadcasting event to room ${room.id}`);
+                const seed = Math.floor(Math.random()*100);
+                room.broadcast( sender, new StartGameEvent( seed ), false );
+            } break;
             default:
                 console.log(`Nieznany typ wiadomosci ${baseMsg.type}`);
         }
@@ -335,8 +343,8 @@ class GameServer {
 const app = express();
 // const server = http.createServer(app);
 const server = https.createServer({
-    key: fs.readFileSync('server.key'),
-    cert: fs.readFileSync('server.cert')
+    key: fs.readFileSync('privkey.pem'),
+    cert: fs.readFileSync('cert.pem')
 }, app);
 const wss = new WebSocket.Server({ server });
 let gameServer = new GameServer();
@@ -350,6 +358,7 @@ wss.on('connection', (ws: WebSocket) => {
     ws.on('close', () => gameServer.rageQuit(peer));
 });
 
+
 app
 .get('/*', (req, res) => {
     let resp = `${req.path}`;
@@ -359,6 +368,7 @@ app
     console.log( resp.replace(/BREJK/g, '\n') );
     res.send( resp.replace(/BREJK/g, '<br />') );
 } );
+
 
 // start
 // server.listen(process.env.PORT || 8080);

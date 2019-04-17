@@ -19,6 +19,7 @@ import { AuthService } from './services/auth.service';
 import { WebsocketService } from './services/webosocket.service';
 import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
 import { FortumoComponent } from './components/fortumo/fortumo.component';
+import { WebRtcComponent } from './components/webrtc/webrtc.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { FortumoComponent } from './components/fortumo/fortumo.component';
     CollisionsComponent,
     ThrowsgraphComponent,
     StylingComponent,
-    FortumoComponent
+    FortumoComponent,
+    WebRtcComponent
   ],
   imports: [
     AppRoutingModule,
