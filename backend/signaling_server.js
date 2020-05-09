@@ -42,6 +42,7 @@ wss.on('connection', function (connection) {
    //when server gets a message from a connected user 
    connection.on('message', function (message) {
 
+      console.log(`-------------------------------------------------------------`);
       console.log(`Received: ${message}`);
       let data = receive(message);
 
@@ -52,7 +53,7 @@ wss.on('connection', function (connection) {
           * Sign-in
           */
          case "login": {
-            const username = data.name;
+            const username = data.receiver;
             //if anyone is logged in with this username then refuse 
             if (peers[username]) {
                console.log(`User ${username} failed to log in`);
@@ -76,8 +77,8 @@ wss.on('connection', function (connection) {
           * Sign-off
           */
          case "leave": {
-            console.log("Disconnecting from", data.name);
-            const conn = peers[data.name];
+            console.log("Disconnecting from", data.receiver);
+            const conn = peers[data.receiver];
 
             //notify the other user so he can disconnect his peer connection 
             if (conn != null) {
@@ -90,19 +91,19 @@ wss.on('connection', function (connection) {
 
 
          /**
-          *  connection.owner wants to call Someone (data.name)
+          *  connection.owner wants to call Someone (data.receiver)
           */
          case "offer": {
-            console.log("Sending offer to: ", data.name);
+            console.log("Sending offer to: ", data.receiver);
             // if Someone exists then send him offer details 
-            const conn = peers[data.name];
+            const conn = peers[data.receiver];
             if (conn != null) {
                //setting that UserA connected with UserB 
-               connection.callee = data.name;
+               connection.callee = data.receiver;
                sendTo(conn, {
                   type: "offer",
                   offer: data.offer,
-                  name: connection.owner
+                  sendername: connection.owner
                });
             }
          } break;
@@ -111,10 +112,10 @@ wss.on('connection', function (connection) {
           * connection.owner received [offer] and is sending [answer] back
           */
          case "answer": {
-            console.log("Sending answer to: ", data.name);
-            const conn = peers[data.name];
+            console.log("Sending answer to: ", data.receiver);
+            const conn = peers[data.receiver];
             if (conn != null) {
-               connection.callee = data.name;
+               connection.callee = data.receiver;
                sendTo(conn, {
                   type: "answer",
                   answer: data.answer
@@ -130,9 +131,9 @@ wss.on('connection', function (connection) {
           * connection.owner sent [candidate] to callee
           */
          case "candidate": {
-            // connection.callee == data.name
-            console.log("Sending candidate to:", data.name);
-            const conn = peers[data.name];
+            // connection.callee == data.receiver
+            console.log(`Sending candidate to ${data.receiver}`);
+            const conn = peers[data.receiver];
             if (conn != null) {
                sendTo(conn, {
                   type: "candidate",

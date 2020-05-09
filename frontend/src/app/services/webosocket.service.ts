@@ -33,7 +33,8 @@ export class WebsocketService {
   private rpcBus: EventEmitter;
 
   constructor() {
-    this.url = 'wss://6510b.ddns.net:8080';
+    // this.url = 'wss://6510b.ddns.net:8080';
+    this.url = 'ws://127.0.0.1:8080';
     this.ws = undefined;
     this.eventBus = new EventEmitter();
     this.rpcBus = new EventEmitter();

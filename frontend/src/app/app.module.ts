@@ -20,7 +20,6 @@ import { WebsocketService } from './services/webosocket.service';
 import { ThrowsgraphComponent } from './components/throwsgraph/throwsgraph.component';
 import { FortumoComponent } from './components/fortumo/fortumo.component';
 import { WebRtcComponent } from './components/webrtc/webrtc.component';
-import { DupaComponent } from './dupa/dupa.component';
 
 @NgModule({
   declarations: [
@@ -35,8 +34,7 @@ import { DupaComponent } from './dupa/dupa.component';
     ThrowsgraphComponent,
     StylingComponent,
     FortumoComponent,
-    WebRtcComponent,
-    DupaComponent
+    WebRtcComponent
   ],
   imports: [
     AppRoutingModule,

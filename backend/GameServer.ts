@@ -342,10 +342,11 @@ class GameServer {
  */
 const app = express();
 // const server = http.createServer(app);
-const server = https.createServer({
+/* const server = https.createServer({
     key: fs.readFileSync('privkey.pem'),
     cert: fs.readFileSync('cert.pem')
-}, app);
+}, app); */
+const server = http.createServer(app)
 const wss = new WebSocket.Server({ server });
 let gameServer = new GameServer();
 
@@ -371,5 +372,5 @@ app
 
 
 // start
-// server.listen(process.env.PORT || 8080);
-server.listen(8080, '192.168.1.13');
+server.listen(process.env.PORT || 8080);
+// server.listen(8080, '192.168.1.13');

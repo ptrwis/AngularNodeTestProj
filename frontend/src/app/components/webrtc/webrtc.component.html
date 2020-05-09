@@ -7,15 +7,15 @@ https://www.tutorialspoint.com/webrtc/webrtc_text_demo.htm
             <label class="sr-only">Login</label>
             <!-- <input  type="email" [(ngModel)]="localUsername" class="form-control formgroup" 
                     placeholder="Login" required="" autofocus="" /> -->
-            <button (click)="loginBtnClick('caller')" class="btn btn-lg btn-primary btnblock">
-                Sign in as caller</button>
-            <button (click)="loginBtnClick('callee')" class="btn btn-lg btn-primary btnblock">
-                Sign in as callee</button>
+            <button (click)="call('callee')" class="btn btn-lg btn-primary btnblock">
+                Call</button>
+            <button (click)="waitForCallAs('callee')" class="btn btn-lg btn-primary btnblock">
+                Wait for call</button>
         </div>
     </div>
 </div>
 
-<div *ngIf="loggedIn" class="call-page container">
+<div class="call-page container">
     <div class="row">Logged in as {{localUsername}}</div>
     <div class="row">Talking with {{remoteUsername}}</div>
     <div class="row">
@@ -31,10 +31,10 @@ https://www.tutorialspoint.com/webrtc/webrtc_text_demo.htm
     <div class="row text-center form-group">
         <div class="col-md-12">
             <!-- <input [(ngModel)]="remoteUsername" type="text" placeholder="username to call" /> -->
-            <div *ngIf="localUsername === 'caller'">
+            <!-- <div *ngIf="localUsername === 'caller'">
                 <button (click)="callBtnClick('callee')" [disabled]="remoteUsername"
                     class="btn-success btn">Call</button>
-            </div>
+            </div> -->
             <button (click)="hangUpBtnClick()" [disabled]="!remoteUsername" class="btn-danger btn">Hang Up</button>
         </div>
     </div>
