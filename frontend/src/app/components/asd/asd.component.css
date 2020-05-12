@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans');
+
+@import url('https://fonts.googleapis.com/css2?family=Amatic+SC');
+@import url('https://fonts.googleapis.com/css2?family=Tangerine');
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower');
+
+@import url('https://fonts.googleapis.com/css2?family=Poiret+One');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P');
+@import url('https://fonts.googleapis.com/css2?family=Monoton');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide');
+
+@import url('https://fonts.googleapis.com/css2?family=Ruge+Boogie&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Henny+Penny&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Codystar:wght@300;400&display=swap');
+
+.amatik{          font-family: 'Amatic SC', cursive;  }
+.tangerine{       font-family: 'Tangerine', cursive;  }
+.indie_flower{    font-family: 'Indie Flower', cursive; }
+
+.poiret_one{      font-family: 'Poiret One', cursive; }
+.press_start_2p{  font-family: 'Press Start 2P', cursive; }
+.monoton{         font-family: 'Monoton', cursive;    }
+.audiowide{       font-family: 'Audiowide', cursive;  }
+
+.ruge_boogie{     font-family: 'Ruge Boogie', cursive; }
+.henny_penny{     font-family: 'Henny Penny', cursive; }
+.pinyon_script{   font-family: 'Pinyon Script', cursive; }
+.cody_star{       font-family: 'Codystar', cursive;    }
+
+#app {
+  background-color: black;
+  font-family: 'Fira Sans', Helvetica, Arial, sans-serif;
+  font-size: 12.8px;
+  font-weight: 400;
+}
+
+#blue_planet {
+  width:  200px;
+  height: 200px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 0px dashed white;
+  background-image: radial-gradient(
+    closest-side, #100e83, black
+  );
+  box-shadow:
+  	0 0  5px #1670d6,
+    0 0 15px #1670d6,
+    0 0 25px #1670d6
+  ;
+}
+
+.orange_circle {
+  position: absolute;
+  height: 100px;
+  width: 100px;
+  background-color: rgba(0,0,0,0);
+  border-radius: 50%;
+  border: 1px solid white;
+  box-sizing: border-box;
+  box-shadow:
+  	inset 0 0  5px #fc5e03, 0 0  5px #fc5e03,
+    inset 0 0 15px #fc5e03, 0 0 15px #fc5e03,
+    inset 0 0 25px #fc5e03, 0 0 25px #fc5e03
+  ;
+}
+
+nav {
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dot {
+  position: relative;
+  width: 4px;
+  height: 4px;
+  background-color: #00000000;
+  border-radius: 50%;
+  box-sizing: border-box;
+  box-shadow:
+  	inset 0 0 4px #ffffff88, 0 0 2px white,
+    0 0 6px white,
+    0 0 10px white
+  ;
+}
+
+.msgbox {
+  background-color: rgba(87, 87, 87, 0.3);
+  border-radius: 8px 4px;
+  width: fit-content;
+  padding: 2px 4px;
+  border: 2px solid rgb(6, 139, 248);
+}
+.msg {
+  cursor: pointer;
+  color: #1da1f2;
+}
+.msg:hover {
+  color: white;
+  text-shadow:
+    0 0  5px #1da1f2,
+    0 0 10px #1da1f2
+  ;
+}
+
+
+
+
+
+.marquee {
+  width: 100%;
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  border: 1px solid gray;
+}
+
+.marquee span {
+  color: white;
+  display: inline-block;
+  padding-left: 100%;
+  animation: marquee 5s linear infinite;
+}
+
+@keyframes marquee {
+  0%    { transform: translate(0, 0);     }
+  100%  { transform: translate(-100%, 0); }
+}
