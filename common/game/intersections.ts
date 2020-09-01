@@ -48,7 +48,7 @@ export function intersectionCurveSegment( c: Curve, s: Segment ): Vec2d[] {
         // move back
         p = p.add(c.center);
         return c.isInDomain(p) && s.isInDomain(p) ? [p] : [];
-    } else if ( discriminant > 0.000001 ) { // intersection
+    } else { // if ( discriminant >= 0.000001 ) { // intersection
         // p1
         const x1 = (D * dy + Math.sign(dy) * dx * discriminant**0.5 ) / dr**2;
         const y1 = (-D * dx + Math.abs(dy) * discriminant**0.5 ) / dr**2;
